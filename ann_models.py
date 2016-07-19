@@ -89,6 +89,13 @@ class SupervisedNNModel(object):
         Classification:
             model = SupervisedNNModel(x_dim, y_dim, hunits=[100, 50], activations=[T.tanh, T.tanh, T.nnet.softmax],
                                       cost_fun='negative_log_likelihood', error_fun='zero_one_loss')
+
+        The model has the same functions as regular sklearn models, i.e. to train the model call
+            model.fit(X, Y)
+        To get the classification accuracy on some test data (based on the error_fun specified when initializing the model):
+            error = model.score(X, Y)
+        To make predictions on some test data:
+            y_pred = model.predict(X)
         """
 
         ## build the model
@@ -191,7 +198,7 @@ class SupervisedNNModel(object):
                 print("Mean training error: %f" % mean_train_error[-1])
         print("Final training error: %f" % mean_train_error[-1])
 
-    def transform(self, X):
+    def predict(self, X):
         """
         apply the model to some test data
 

@@ -27,7 +27,7 @@ def linear_regression(y_dim=5, x_dim=10):
         plt.figure()
         plt.plot(X[:,0], Y[:,0], 'm*')
         X_plot = np.linspace(np.min(X), np.max(X), 1000)
-        plt.plot(X_plot, model.transform(X_plot[:,np.newaxis]), 'k')
+        plt.plot(X_plot, model.predict(X_plot[:,np.newaxis]), 'k')
         plt.plot(X_plot, np.dot(X_plot[:,np.newaxis],W)+b, 'b')
         plt.xlabel('x')
         plt.ylabel('y')
@@ -52,7 +52,7 @@ def nonlinear_regression(y_dim=1, x_dim=1):
         plt.figure()
         plt.plot(X[:,0], Y[:,0], 'm*')
         X_plot = np.linspace(np.min(X), np.max(X),1000)
-        plt.plot(X_plot, model.transform(X_plot[:,np.newaxis]), 'k')
+        plt.plot(X_plot, model.predict(X_plot[:,np.newaxis]), 'k')
         plt.plot(X_plot, np.sin(X_plot),'b')
         plt.xlabel('x')
         plt.ylabel('y')
@@ -95,17 +95,16 @@ def classification(dataset=0):
     cm = plt.cm.RdBu
     cm_bright = ListedColormap(['#FF0000', '#0000FF'])
     
-    Z = model.transform(np.c_[xx.ravel(), yy.ravel()])[:, 1]
+    Z = model.predict(np.c_[xx.ravel(), yy.ravel()])[:, 1]
 
     # Put the result into a color plot
     Z = Z.reshape(xx.shape)
     plt.contourf(xx, yy, Z, cmap=cm, alpha=.8)
 
     # Plot also the training points
-    plt.scatter(X[:, 0], X[:, 1], c=Y, cmap=cm_bright)
+    plt.scatter(X[:, 0], X[:, 1], c=Y, cmap=cm_bright, alpha=0.6)
     # and testing points
-    plt.scatter(X_test[:, 0], X_test[:, 1], c=Y_test, cmap=cm_bright,
-               alpha=0.6)
+    plt.scatter(X_test[:, 0], X_test[:, 1], c=Y_test, cmap=cm_bright)
 
     plt.xlim(xx.min(), xx.max())
     plt.ylim(yy.min(), yy.max())
