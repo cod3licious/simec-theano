@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import offsetbox
 import numpy as np
-from sklearn.datasets import make_moons, make_circles, make_classification, make_swiss_roll, make_s_curve
+from sklearn.datasets import make_moons, make_circles, make_blobs, make_swiss_roll, make_s_curve
 from sklearn.utils import check_random_state
 
 def get_colors(N=100):
@@ -38,8 +38,8 @@ def make_3_circles(n_samples, random_state=1):
 def make_sphere(n_samples, random_state=1):
     # Create our sphere.
     random_state = check_random_state(random_state)
-    p = random_state.rand(n_samples) * (2 * np.pi - 0.5)
-    t = random_state.rand(n_samples) * np.pi
+    p = random_state.rand(int(n_samples*1.5)) * (2 * np.pi - 0.5)
+    t = random_state.rand(int(n_samples*1.5)) * np.pi
 
     # Sever the poles from the sphere.
     indices = ((t < (np.pi - (np.pi / 10))) & (t > ((np.pi / 10))))
@@ -48,7 +48,7 @@ def make_sphere(n_samples, random_state=1):
         np.sin(t[indices]) * np.sin(p[indices]), \
         np.cos(t[indices])
     sphere_data = np.array([x, y, z]).T
-    return sphere_data, colors
+    return sphere_data[:n_samples,:], colors[:n_samples]
 
 def make_broken_swiss_roll(n_samples, random_state=1):
     # get original swiss roll
@@ -70,8 +70,7 @@ def make_peaks(n_samples, random_state=1):
     Y_plot = X[:,2]
     return X, Y_plot
 
-
-def load_dataset(dataset, n_samples, random_state=1):
+def load_dataset(dataset, n_samples, random_state=1, n_features=3):
     # wrapper function to load one of the 3d datasets
     if dataset == 's_curve':
         return make_s_curve(n_samples, random_state=random_state)
@@ -85,6 +84,8 @@ def load_dataset(dataset, n_samples, random_state=1):
         return make_3_circles(n_samples, random_state=random_state)
     elif dataset == 'peaks':
         return make_peaks(n_samples, random_state=random_state)
+    elif dataset == 'blobs':
+        return make_blobs(n_samples, n_features=n_features, centers=3, random_state=random_state)
     else:
         print("unknown dataset")
 
