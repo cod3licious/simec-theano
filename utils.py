@@ -121,7 +121,7 @@ def plot_digits(X, digits, title=None):
     for i in range(X.shape[0]):
         plt.text(X[i, 0], X[i, 1], str(digits.target[i]),
                  color=colorlist[digits.target[i]],
-                 fontdict={'weight': 'bold', 'size': 9})
+                 fontdict={'weight': 'medium', 'size': 9})
 
     if hasattr(offsetbox, 'AnnotationBbox'):
         # only print thumbnails with matplotlib > 1.0
@@ -136,6 +136,51 @@ def plot_digits(X, digits, title=None):
                 offsetbox.OffsetImage(digits.images[i], cmap=plt.cm.gray_r),
                 X[i])
             ax.add_artist(imagebox)
+    plt.xticks([]), plt.yticks([])
+    if title is not None:
+        plt.title(title, fontsize=20)
+
+
+def plot_mnist(X, y, X_test=None, y_test=None, title=None):
+    plt.figure()
+    alpha = 1
+    colorlist = get_colors(10)
+    # Scale and visualize the embedding vectors
+    x_min, x_max = np.min(X, 0), np.max(X, 0)
+    if (X_test is not None) and (y_test is not None):
+        x_min, x_max = np.min(np.array([x_min, np.min(X_test, 0)]), 0), np.max(np.array([x_max, np.max(X_test, 0)]), 0)
+        X_test = (X_test - x_min) / (x_max - x_min)
+        alpha = 0.4
+    X = (X - x_min) / (x_max - x_min)
+    for i in range(X.shape[0]):
+        plt.text(X[i, 0], X[i, 1], str(y[i]),
+                 color=colorlist[y[i]],
+                 fontdict={'weight': 'medium', 'size': 9},
+                 alpha=alpha)
+    if (X_test is not None) and (y_test is not None):
+        for i in range(X_test.shape[0]):
+            plt.text(X_test[i, 0], X_test[i, 1], str(y_test[i]),
+                     color=colorlist[y_test[i]],
+                     fontdict={'weight': 'medium', 'size': 9})
+
+    plt.xticks([]), plt.yticks([])
+    if title is not None:
+        plt.title(title, fontsize=20)
+
+def plot_20news(X, y, target_names, X_test=None, y_test=None, title=None): 
+    colorlist = get_colors(len(target_names))
+    def plot_scatter(X, y, alpha=1):
+        y = np.array(y)
+        for i, l in enumerate(target_names):
+            plt.scatter(X[y==i, 0], X[y==i, 1], c=colorlist[i], alpha=alpha, edgecolors='none', label=l if alpha==1 else None)
+    # plot scatter plot
+    plt.figure()
+    if (X_test is not None) and (y_test is not None):
+        plot_scatter(X, y, 0.2)
+        plot_scatter(X_test, y_test, 1.)
+    else:
+        plot_scatter(X, y)
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), scatterpoints=1)
     plt.xticks([]), plt.yticks([])
     if title is not None:
         plt.title(title, fontsize=20)

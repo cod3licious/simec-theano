@@ -11,20 +11,28 @@ def thr_sigmoid(x):
     # between 0 and 1 if it's between 0 and 1 and threshold it otherwise
     return T.nnet.sigmoid(10.*(x-0.5))
 
-def embedding_error(s_est, s_true, error_fun):
+def embedding_error(s_est, s_true, error_fun, idx=None):
     if error_fun == 'squared':
-        return T.mean((s_true-s_est)**2)
-    elif error_fun == 'abs':
+        if idx:
+            return T.mean((s_true[idx.nonzero()]-s_est[idx.nonzero()])**2)
+        else:
+            return T.mean((s_true-s_est)**2)
+    elif error_fun == 'absolute':
         return T.mean(abs(s_true-s_est))
     else:
-        raise Exception('Error function %s not implemented!' % error_fun)
+        # is what we were given a function in itself i.e. can we call it?
+        try:
+            return error_fun(s_est, s_true)
+        except:
+            raise Exception('Error function %s not implemented!' % error_fun)
 
 class SimilarityEncoder(object):
 
-    def __init__(self, n_targets, n_features, e_dim=2, n_out=[], activations=[None, None], error_fun='squared', seed=12, sparse_features=False, 
-                 lrate=0.1, lrate_decay=0.95, min_lrate=0.04, L1_reg=0., L2_reg=0., orthOT_reg=0.1, orthNN_reg=0.):
+    def __init__(self, n_targets, n_features, e_dim=2, n_out=[], activations=[None, None], error_fun='squared', sparse_features=False, 
+                 subsampling=False, lrate=0.1, lrate_decay=0.95, min_lrate=0.04, L1_reg=0., L2_reg=0., orthOT_reg=0.1, orthNN_reg=0., seed=12):
         """
         Constructs the Similarity Encoder
+        by default it's a linear SimEc which can be used for visualization (i.e. output is 2D) and should give the same results as PCA/linear kPCA
 
         Inputs:
             - n_targets: for how many data points we know the similarities (typically X.shape[0], i.e. all training examples)
@@ -32,8 +40,7 @@ class SimilarityEncoder(object):
             - e_dim: how many dimensions the embedding should have (default 2)
             - n_out: number of hidden units for other layers (last two are always fixed as e_dim and n_targets)
             - activations: for the NN model architecture
-            - error_fun: which error measure should be used in backpropagation (default: 'squared', other values: 'abs')
-            - seed: random seed for the NN initialization
+            - error_fun: which error measure should be used in backpropagation (default: 'squared', other values: 'absolute')
             - sparse_features: bool, whether the input features will be in form of a sparse matrix (csr)
             - lrate: learning rate (default 0.2)
             - lrate_decay: learning rate decay (default 0.95, set to 1 for no decay)
@@ -43,6 +50,7 @@ class SimilarityEncoder(object):
                           (helpful to get the same solution as kPCA as there the embeddings are orthogonal as well (eigenvectors...))
             - orthNN_reg: regularization parameter to encourage orthogonal weights in the other layers besides the output layer (default 0.)
                           (this does not help in most cases, only for the linear SimEc to mimic regular PCA where the projection vectors are orthogonal)
+            - seed: random seed for the NN initialization
         """
         ## build the model
         self.n_targets = n_targets
@@ -59,6 +67,11 @@ class SimilarityEncoder(object):
         else:
             x = T.matrix('x')  # input data
         s = T.matrix('s')      # corresponding similarities
+        # are we doing subsampling of the target similarities?
+        if subsampling:
+            idx = T.matrix('idx', dtype='int8')
+        else:
+            idx = None
 
         # construct the ANN
         self.model = ANN(
@@ -71,13 +84,22 @@ class SimilarityEncoder(object):
 
         # the cost we minimize during training is the mean squared error of
         # the model plus the regularization terms (L1 and L2)
-        self.cost = (
-            embedding_error(self.model.output, s, self.error_fun)
-            + L1_reg * self.model.L1
-            + L2_reg * self.model.L2_sqr
-            + orthNN_reg * self.model.orthNN
-            + orthOT_reg * self.model.orthOT
-        )
+        if subsampling:
+            self.cost = (
+                embedding_error(self.model.output, s, self.error_fun, idx)
+                + L1_reg * self.model.L1
+                + L2_reg * self.model.L2_sqr
+                + orthNN_reg * self.model.orthNN
+                + orthOT_reg * self.model.orthOT
+            )
+        else:
+            self.cost = (
+                embedding_error(self.model.output, s, self.error_fun)
+                + L1_reg * self.model.L1
+                + L2_reg * self.model.L2_sqr
+                + orthNN_reg * self.model.orthNN
+                + orthOT_reg * self.model.orthOT
+            )
 
         # compile a Theano function that computes the embedding on some data
         self.embed = theano.function(
@@ -99,20 +121,37 @@ class SimilarityEncoder(object):
         # compile a Theano function `train_model` that returns the cost, but
         # in the same time updates the parameter of the model based on the rules
         # defined in `updates`
-        self.train_model = theano.function(
+        if subsampling:
+            self.train_model = theano.function(
+                inputs=[x, s, idx],
+                outputs=embedding_error(self.model.output, s, self.error_fun, idx),
+                updates=updates,
+                allow_input_downcast=True
+            )
+        else:
+            self.train_model = theano.function(
+                inputs=[x, s],
+                outputs=embedding_error(self.model.output, s, self.error_fun),
+                updates=updates,
+                allow_input_downcast=True
+            )
+        # to only get the error
+        self.test_model = theano.function(
             inputs=[x, s],
-            outputs=embedding_error(self.model.output, s, self.error_fun),
-            updates=updates
+            outputs=embedding_error(self.model.output, s, self.error_fun)
         )
 
-    def fit(self, X, S, verbose=True):
+    def fit(self, X, S, idx=None, verbose=True, max_epochs=5000):
         """
         fit the model on some training data
 
         Inputs:
             - X: training data (n_train x n_features)
             - S: target similarities for all the training points (n_train x n_targets)
+            - idx: if subsampling is on, this can be a matrix of 0 and 1 the same shape as S
+                   to indicate which of the similarities should be used for learning
             - verbose: bool, whether to output state of training
+            - max_epochs: max number of times to go through the training data (default 5000)
         """
         assert X.shape[0] == S.shape[0], "need target similarities for all training examples"
         assert X.shape[1] == self.n_features, "wrong number of features specified when initializing the model"
@@ -121,8 +160,6 @@ class SimilarityEncoder(object):
         S /= np.max(np.abs(S))
         ## define some variables for training
         n_train = X.shape[0]
-        # number of times to go through the training data
-        max_epochs = 5000
         # work on 20 training examples at a time
         batch_size = min(n_train, 100)
         n_batches = int(np.ceil(float(n_train)/batch_size))
@@ -140,22 +177,38 @@ class SimilarityEncoder(object):
                 mini_s = S[bi*batch_size:min((bi+1)*batch_size,n_train),:]
                 mini_x = X[bi*batch_size:min((bi+1)*batch_size,n_train),:]
                 # train model
-                train_error.append(self.train_model(mini_x, mini_s))
+                if idx is not None:
+                    mini_idx = idx[bi*batch_size:min((bi+1)*batch_size,n_train),:]
+                    train_error.append(self.train_model(mini_x, mini_s, mini_idx))
+                else:
+                    train_error.append(self.train_model(mini_x, mini_s))
             mean_train_error.append(np.mean(train_error))
             if not e or not (e+1) % 25:
                 if verbose:
                     print("Mean training error: %.10f" % mean_train_error[-1])
-                # store best model
-                if mean_train_error[-1] < best_error:
-                    best_error = mean_train_error[-1]
-                    best_model = deepcopy(self.model)
                 # adapt learning rate
-                self.learning_rate = max(self.min_lrate, self.learning_rate*self.lrate_decay)
+                if e > 500 and (mean_train_error[-1]-0.0005 > mean_train_error[-20]):
+                    # we're bouncing, the learning rate is WAY TO HIGH
+                    self.learning_rate *= 0.5
+                else:
+                    self.learning_rate = max(self.min_lrate, self.learning_rate*self.lrate_decay)
+            # store best model
+            if mean_train_error[-1] < best_error:
+                best_error = mean_train_error[-1]
+                best_model = deepcopy(self.model)
             if e > 500 and (mean_train_error[-1]-0.05 > mean_train_error[-20] or round(mean_train_error[-1], 10) == round(mean_train_error[-5], 10)):
                 break
         # use the best model
         self.model = best_model
-        print("Final training error: %f; lowest error: %f" % (mean_train_error[-1], best_error))
+        print("Final training error: %.10f; lowest error: %.10f" % (mean_train_error[-1], best_error))
+        # one last time just to get the error to double check
+        test_error = []
+        for bi in range(n_batches):
+            mini_s = S[bi*batch_size:min((bi+1)*batch_size,n_train),:]
+            mini_x = X[bi*batch_size:min((bi+1)*batch_size,n_train),:]
+            # train model
+            test_error.append(self.test_model(mini_x, mini_s))
+        print("Last mean error: %.10f" % np.mean(test_error))
 
     def transform(self, X):
         """
