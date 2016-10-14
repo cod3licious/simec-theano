@@ -11,6 +11,13 @@ def thr_sigmoid(x):
     # between 0 and 1 if it's between 0 and 1 and threshold it otherwise
     return T.nnet.sigmoid(10.*(x-0.5))
 
+def center_K(K):
+    # center the kernel matrix
+    n, m = K.shape
+    H = np.eye(n) - np.tile(1./n,(n,n))
+    B = np.dot(np.dot(H,K),H)
+    return (B+B.T)/2
+
 def embedding_error(s_est, s_true, error_fun, idx=None):
     if error_fun == 'squared':
         if idx:
@@ -206,7 +213,7 @@ class SimilarityEncoder(object):
         for bi in range(n_batches):
             mini_s = S[bi*batch_size:min((bi+1)*batch_size,n_train),:]
             mini_x = X[bi*batch_size:min((bi+1)*batch_size,n_train),:]
-            # train model
+            # test model
             test_error.append(self.test_model(mini_x, mini_s))
         print("Last mean error: %.10f" % np.mean(test_error))
 

@@ -10,13 +10,6 @@ def get_colors(N=100):
     HSV_tuples = [(x*1.0/N, 1., 0.8) for x in range(N)]
     return map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
 
-def center_K(K):
-    # center the kernel matrix
-    n, m = K.shape
-    H = np.eye(n) - np.tile(1./n,(n,n))
-    B = np.dot(np.dot(H,K),H)
-    return (B+B.T)/2
-
 def make_3_circles(n_samples, random_state=1):
     X = np.ones((3*n_samples, 3))
     Y_plot = np.ones((3*n_samples, 1))
@@ -166,6 +159,7 @@ def plot_mnist(X, y, X_test=None, y_test=None, title=None):
     plt.xticks([]), plt.yticks([])
     if title is not None:
         plt.title(title, fontsize=20)
+
 
 def plot_20news(X, y, target_names, X_test=None, y_test=None, title=None): 
     colorlist = get_colors(len(target_names))
