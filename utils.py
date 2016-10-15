@@ -161,7 +161,7 @@ def plot_mnist(X, y, X_test=None, y_test=None, title=None):
         plt.title(title, fontsize=20)
 
 
-def plot_20news(X, y, target_names, X_test=None, y_test=None, title=None): 
+def plot_20news(X, y, target_names, X_test=None, y_test=None, title=None, legend=False): 
     colorlist = get_colors(len(target_names))
     def plot_scatter(X, y, alpha=1):
         y = np.array(y)
@@ -174,7 +174,8 @@ def plot_20news(X, y, target_names, X_test=None, y_test=None, title=None):
         plot_scatter(X_test, y_test, 1.)
     else:
         plot_scatter(X, y)
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), scatterpoints=1)
+    if legend: 
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), scatterpoints=1)
     plt.xticks([]), plt.yticks([])
     if title is not None:
         plt.title(title, fontsize=20)
