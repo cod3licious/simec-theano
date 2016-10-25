@@ -157,6 +157,8 @@ def plot_mnist(X, y, X_test=None, y_test=None, title=None):
                      fontdict={'weight': 'medium', 'size': 9})
 
     plt.xticks([]), plt.yticks([])
+    plt.xlim(-0.05, 1.05)
+    plt.ylim(-0.05, 1.05)
     if title is not None:
         plt.title(title, fontsize=20)
 
@@ -166,7 +168,7 @@ def plot_20news(X, y, target_names, X_test=None, y_test=None, title=None, legend
     def plot_scatter(X, y, alpha=1):
         y = np.array(y)
         for i, l in enumerate(target_names):
-            plt.scatter(X[y==i, 0], X[y==i, 1], c=colorlist[i], alpha=alpha, edgecolors='none', label=l if alpha==1 else None)
+            plt.scatter(X[y==i, 0], X[y==i, 1], c=colorlist[i], alpha=alpha, edgecolors='none', label=l if alpha==1 else None)#, rasterized=True)
     # plot scatter plot
     plt.figure()
     if (X_test is not None) and (y_test is not None):

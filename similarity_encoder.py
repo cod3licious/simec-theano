@@ -64,16 +64,20 @@ class SimilarityEncoder(object):
         self.n_features = n_features
         # some parameters
         self.error_fun = error_fun
-        self.learning_rate = lrate
+        self.learning_rate = theano.shared(
+            value=lrate,
+            name='learning_rate',
+            borrow=True
+        )
         self.lrate_decay = lrate_decay
         self.min_lrate = min_lrate
 
         # allocate symbolic variables for the data
         if sparse_features:
-            x = sparse.csr_matrix('x')
+            self.x = sparse.csr_matrix('x')
         else:
-            x = T.matrix('x')  # input data
-        s = T.matrix('s')      # corresponding similarities
+            self.x = T.matrix('x')  # input data
+        self.s = T.matrix('s')      # corresponding similarities
         # are we doing subsampling of the target similarities?
         if subsampling:
             idx = T.matrix('idx', dtype='int8')
@@ -82,7 +86,7 @@ class SimilarityEncoder(object):
 
         # construct the ANN
         self.model = ANN(
-            x_in=x,
+            x_in=self.x,
             n_in=n_features,
             n_out=n_out+[e_dim, n_targets],
             activation=activations,
@@ -93,7 +97,7 @@ class SimilarityEncoder(object):
         # the model plus the regularization terms (L1 and L2)
         if subsampling:
             self.cost = (
-                embedding_error(self.model.output, s, self.error_fun, idx)
+                embedding_error(self.model.output, self.s, self.error_fun, idx)
                 + L1_reg * self.model.L1
                 + L2_reg * self.model.L2_sqr
                 + orthNN_reg * self.model.orthNN
@@ -101,7 +105,7 @@ class SimilarityEncoder(object):
             )
         else:
             self.cost = (
-                embedding_error(self.model.output, s, self.error_fun)
+                embedding_error(self.model.output, self.s, self.error_fun)
                 + L1_reg * self.model.L1
                 + L2_reg * self.model.L2_sqr
                 + orthNN_reg * self.model.orthNN
@@ -110,7 +114,7 @@ class SimilarityEncoder(object):
 
         # compile a Theano function that computes the embedding on some data
         self.embed = theano.function(
-            inputs=[x],
+            inputs=[self.x],
             outputs=self.model.layers[-2].output
         )
 
@@ -130,22 +134,22 @@ class SimilarityEncoder(object):
         # defined in `updates`
         if subsampling:
             self.train_model = theano.function(
-                inputs=[x, s, idx],
-                outputs=embedding_error(self.model.output, s, self.error_fun, idx),
+                inputs=[self.x, self.s, idx],
+                outputs=embedding_error(self.model.output, self.s, self.error_fun, idx),
                 updates=updates,
                 allow_input_downcast=True
             )
         else:
             self.train_model = theano.function(
-                inputs=[x, s],
-                outputs=embedding_error(self.model.output, s, self.error_fun),
+                inputs=[self.x, self.s],
+                outputs=embedding_error(self.model.output, self.s, self.error_fun),
                 updates=updates,
                 allow_input_downcast=True
             )
         # to only get the error
         self.test_model = theano.function(
-            inputs=[x, s],
-            outputs=embedding_error(self.model.output, s, self.error_fun)
+            inputs=[self.x, self.s],
+            outputs=embedding_error(self.model.output, self.s, self.error_fun)
         )
 
     def fit(self, X, S, idx=None, verbose=True, max_epochs=5000):
@@ -173,7 +177,7 @@ class SimilarityEncoder(object):
         
         ## do the actual training of the model
         best_error = np.inf
-        best_model = deepcopy(self.model)
+        best_layers = [deepcopy(p) for p in self.model.layers]
         mean_train_error = []
         for e in range(max_epochs):
             if verbose:
@@ -194,19 +198,36 @@ class SimilarityEncoder(object):
                 if verbose:
                     print("Mean training error: %.10f" % mean_train_error[-1])
                 # adapt learning rate
-                if e > 500 and (mean_train_error[-1]-0.0005 > mean_train_error[-20]):
+                if e > 500 and (mean_train_error[-1]-0.001 > best_error):
                     # we're bouncing, the learning rate is WAY TO HIGH
-                    self.learning_rate *= 0.5
+                    self.learning_rate.set_value(self.learning_rate.get_value()*0.5)
+                    # might be a problem of min_lrate as well
+                    if self.learning_rate.get_value() < self.min_lrate:
+                        self.min_lrate *= 0.5
+                    print("Learning rate too high! Reseting to best local minima (error: %.10f)." % best_error)
+                    for i, l in enumerate(best_layers):
+                        self.model.layers[i].W.set_value(l.W.get_value(borrow=False))
+                        self.model.layers[i].b.set_value(l.b.get_value(borrow=False))
+                    test_error = []
+                    for bi in range(n_batches):
+                        mini_s = S[bi*batch_size:min((bi+1)*batch_size,n_train),:]
+                        mini_x = X[bi*batch_size:min((bi+1)*batch_size,n_train),:]
+                        # test model
+                        test_error.append(self.test_model(mini_x, mini_s))
+                    print("Sanity check, mean test error: %.10f" % np.mean(test_error))
                 else:
-                    self.learning_rate = max(self.min_lrate, self.learning_rate*self.lrate_decay)
+                    self.learning_rate.set_value(max(self.min_lrate, self.learning_rate.get_value()*self.lrate_decay))
             # store best model
             if mean_train_error[-1] < best_error:
                 best_error = mean_train_error[-1]
-                best_model = deepcopy(self.model)
-            if e > 500 and (mean_train_error[-1]-0.05 > mean_train_error[-20] or round(mean_train_error[-1], 10) == round(mean_train_error[-5], 10)):
+                best_layers = [deepcopy(p) for p in self.model.layers]
+            # converged?
+            if e > 500 and round(mean_train_error[-1], 10) == round(mean_train_error[-5], 10):
                 break
         # use the best model
-        self.model = best_model
+        for i, l in enumerate(best_layers):
+            self.model.layers[i].W.set_value(l.W.get_value(borrow=False))
+            self.model.layers[i].b.set_value(l.b.get_value(borrow=False))
         print("Final training error: %.10f; lowest error: %.10f" % (mean_train_error[-1], best_error))
         # one last time just to get the error to double check
         test_error = []
