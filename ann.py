@@ -102,4 +102,6 @@ class ANN(object):
         # orthogonalization of weights in the NN (probably not - only in the linear case)
         self.orthNN = sum([T.abs_(T.dot(l.W.T, l.W) - T.nlinalg.diag(T.nlinalg.diag(T.dot(l.W.T, l.W)))).sum()/float(l.W.get_value().shape[1]) for l in self.layers[:1]])/float(len(self.layers[:1]))
         # orthogonalization of weights from embedding to output as YY^T is the eigendecomposition, i.e. W_1 should be orthogonal
-        self.orthOT = T.abs_(T.dot(self.layers[-1].W, self.layers[-1].W.T) - T.nlinalg.diag(T.nlinalg.diag(T.dot(self.layers[-1].W, self.layers[-1].W.T)))).sum()/float(self.layers[-1].W.get_value().shape[0])
+        # normalize by 1/(d**2-d) to be independent of the dimensionality of the embedding
+        d = self.layers[-1].W.get_value().shape[0]
+        self.orthOT = T.abs_(T.dot(self.layers[-1].W, self.layers[-1].W.T) - T.nlinalg.diag(T.nlinalg.diag(T.dot(self.layers[-1].W, self.layers[-1].W.T)))).sum()/float(d*d-d)
