@@ -11,6 +11,11 @@ def thr_sigmoid(x):
     # between 0 and 1 if it's between 0 and 1 and threshold it otherwise
     return T.nnet.sigmoid(10.*(x-0.5))
 
+def shift_sigmoid(x):
+    # apply a scaled version of the sigmoid to the input to map the data 
+    # between 0 and 1 if it's between 0 and 10 and threshold it otherwise
+    return T.nnet.sigmoid(x-5.))
+
 def center_K(K):
     # center the kernel matrix
     n, m = K.shape
