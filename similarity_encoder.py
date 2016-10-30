@@ -200,10 +200,10 @@ class SimilarityEncoder(object):
                 # adapt learning rate
                 if e > 500 and (mean_train_error[-1]-0.001 > best_error):
                     # we're bouncing, the learning rate is WAY TO HIGH
-                    self.learning_rate.set_value(self.learning_rate.get_value()*0.5)
+                    self.learning_rate.set_value(self.learning_rate.get_value()*0.75)
                     # might be a problem of min_lrate as well
                     if self.learning_rate.get_value() < self.min_lrate:
-                        self.min_lrate *= 0.5
+                        self.min_lrate *= 0.7
                     print("Learning rate too high! Reseting to best local minima (error: %.10f)." % best_error)
                     for i, l in enumerate(best_layers):
                         self.model.layers[i].W.set_value(l.W.get_value(borrow=False))
