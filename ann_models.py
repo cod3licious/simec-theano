@@ -18,7 +18,8 @@ def error_wrapper(y_pred, y_true, error_fun):
 
 
 def mean_squared_error(y_pred, y_true):
-    return T.mean((y_true-y_pred)**2)
+    return T.mean((y_true - y_pred)**2)
+
 
 def negative_log_likelihood(y_out, y):
     """Return the mean of the negative log-likelihood of the prediction
@@ -29,7 +30,7 @@ def negative_log_likelihood(y_out, y):
                  (predicted label = argmax(y_out, axis=1))
         - y: N dimensional vector with corresponding true class labels
              (in the range [0, n_out)) for all data points
-    
+
     Returns:
         - scalar representing the mean negative log likelihood
 
@@ -47,6 +48,7 @@ def negative_log_likelihood(y_out, y):
     # the mean (across minibatch examples) of the elements in v,
     # i.e., the mean log-likelihood across the minibatch.
     return -T.mean(T.log(y_out)[T.arange(y.shape[0]), y])
+
 
 def zero_one_loss(y_pred, y_true):
     """Return a float representing the number of errors in the minibatch
@@ -98,7 +100,7 @@ class SupervisedNNModel(object):
             y_pred = model.predict(X)
         """
 
-        ## build the model
+        # build the model
         # some parameters
         self.x_dim = x_dim
         self.y_dim = y_dim
@@ -114,7 +116,7 @@ class SupervisedNNModel(object):
         self.model = ANN(
             x_in=x,
             n_in=x_dim,
-            n_out=hunits+[y_dim],
+            n_out=hunits + [y_dim],
             activation=activations,
             seed=12
         )
@@ -170,31 +172,31 @@ class SupervisedNNModel(object):
         """
         assert X.shape[0] == Y.shape[0], "need labels for all training examples"
         assert X.shape[1] == self.x_dim, "wrong number of features specified when initializing the model"
-        ## define some variables for training
+        # define some variables for training
         n_train = X.shape[0]
         # number of times to go through the training data
         max_epochs = 1000
         # work on 20 training examples at a time
         batch_size = 20
-        n_batches = int(np.ceil(float(n_train)/batch_size))
-        
+        n_batches = int(np.ceil(float(n_train) / batch_size))
+
         mean_train_error = []
-        ## do the actual training of the model
+        # do the actual training of the model
         for e in range(max_epochs):
-            if not e or not (e+1) % 25:
-                print("Epoch %i" % (e+1))
+            if not e or not (e + 1) % 25:
+                print("Epoch %i" % (e + 1))
             train_error = []
             for bi in range(n_batches):
                 # print("Batch %i / %i" % (bi+1, n_batches))
                 if len(Y.shape) == 1:
-                    mini_y = Y[bi*batch_size:min((bi+1)*batch_size,n_train)]
+                    mini_y = Y[bi * batch_size:min((bi + 1) * batch_size, n_train)]
                 else:
-                    mini_y = Y[bi*batch_size:min((bi+1)*batch_size,n_train),:]
-                mini_x = X[bi*batch_size:min((bi+1)*batch_size,n_train),:]
+                    mini_y = Y[bi * batch_size:min((bi + 1) * batch_size, n_train), :]
+                mini_x = X[bi * batch_size:min((bi + 1) * batch_size, n_train), :]
                 # train model
                 train_error.append(self.train_model(mini_x, mini_y))
             mean_train_error.append(np.mean(train_error))
-            if not e or not (e+1) % 25:
+            if not e or not (e + 1) % 25:
                 print("Mean training error: %f" % mean_train_error[-1])
         print("Final training error: %f" % mean_train_error[-1])
 

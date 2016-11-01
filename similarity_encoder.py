@@ -6,31 +6,35 @@ from theano import sparse
 
 from ann import ANN
 
+
 def thr_sigmoid(x):
-    # apply a scaled version of the sigmoid to the input to map the data 
+    # apply a scaled version of the sigmoid to the input to map the data
     # between 0 and 1 if it's between 0 and 1 and threshold it otherwise
-    return T.nnet.sigmoid(10.*(x-0.5))
+    return T.nnet.sigmoid(10. * (x - 0.5))
+
 
 def shift_sigmoid(x):
-    # apply a scaled version of the sigmoid to the input to map the data 
+    # apply a scaled version of the sigmoid to the input to map the data
     # between 0 and 1 if it's between 0 and 10 and threshold it otherwise
-    return T.nnet.sigmoid(x-5.)
+    return T.nnet.sigmoid(x - 5.)
+
 
 def center_K(K):
     # center the kernel matrix
     n, m = K.shape
-    H = np.eye(n) - np.tile(1./n,(n,n))
-    B = np.dot(np.dot(H,K),H)
-    return (B+B.T)/2
+    H = np.eye(n) - np.tile(1. / n, (n, n))
+    B = np.dot(np.dot(H, K), H)
+    return (B + B.T) / 2
+
 
 def embedding_error(s_est, s_true, error_fun, idx=None):
     if error_fun == 'squared':
         if idx:
-            return T.mean((s_true[idx.nonzero()]-s_est[idx.nonzero()])**2)
+            return T.mean((s_true[idx.nonzero()] - s_est[idx.nonzero()])**2)
         else:
-            return T.mean((s_true-s_est)**2)
+            return T.mean((s_true - s_est)**2)
     elif error_fun == 'absolute':
-        return T.mean(abs(s_true-s_est))
+        return T.mean(abs(s_true - s_est))
     else:
         # is what we were given a function in itself i.e. can we call it?
         try:
@@ -38,9 +42,10 @@ def embedding_error(s_est, s_true, error_fun, idx=None):
         except:
             raise Exception('Error function %s not implemented!' % error_fun)
 
+
 class SimilarityEncoder(object):
 
-    def __init__(self, n_targets, n_features, e_dim=2, n_out=[], activations=[None, None], error_fun='squared', sparse_features=False, 
+    def __init__(self, n_targets, n_features, e_dim=2, n_out=[], activations=[None, None], error_fun='squared', sparse_features=False,
                  subsampling=False, lrate=0.1, lrate_decay=0.95, min_lrate=0.04, L1_reg=0., L2_reg=0., orthOT_reg=0.1, orthNN_reg=0., seed=12):
         """
         Constructs the Similarity Encoder
@@ -64,7 +69,7 @@ class SimilarityEncoder(object):
                           (this does not help in most cases, only for the linear SimEc to mimic regular PCA where the projection vectors are orthogonal)
             - seed: random seed for the NN initialization
         """
-        ## build the model
+        # build the model
         self.n_targets = n_targets
         self.n_features = n_features
         # some parameters
@@ -93,7 +98,7 @@ class SimilarityEncoder(object):
         self.model = ANN(
             x_in=self.x,
             n_in=n_features,
-            n_out=n_out+[e_dim, n_targets],
+            n_out=n_out + [e_dim, n_targets],
             activation=activations,
             seed=seed
         )
@@ -172,40 +177,41 @@ class SimilarityEncoder(object):
         assert X.shape[0] == S.shape[0], "need target similarities for all training examples"
         assert X.shape[1] == self.n_features, "wrong number of features specified when initializing the model"
         assert S.shape[1] == self.n_targets, "wrong number of targets specified when initializing the model"
-        # normalize similarity matrix, other wise the weights will overshoot (turn to nan) / we would have to be too careful with the learning rate
+        # normalize similarity matrix, other wise the weights will overshoot (turn
+        # to nan) / we would have to be too careful with the learning rate
         S /= np.max(np.abs(S))
-        ## define some variables for training
+        # define some variables for training
         n_train = X.shape[0]
         # work on 20 training examples at a time
         batch_size = min(n_train, 100)
-        n_batches = int(np.ceil(float(n_train)/batch_size))
-        
-        ## do the actual training of the model
+        n_batches = int(np.ceil(float(n_train) / batch_size))
+
+        # do the actual training of the model
         best_error = np.inf
         best_layers = [deepcopy(p) for p in self.model.layers]
         mean_train_error = []
         for e in range(max_epochs):
             if verbose:
-                if not e or not (e+1) % 25:
-                    print("Epoch %i" % (e+1))
+                if not e or not (e + 1) % 25:
+                    print("Epoch %i" % (e + 1))
             train_error = []
             for bi in range(n_batches):
-                mini_s = S[bi*batch_size:min((bi+1)*batch_size,n_train),:]
-                mini_x = X[bi*batch_size:min((bi+1)*batch_size,n_train),:]
+                mini_s = S[bi * batch_size:min((bi + 1) * batch_size, n_train), :]
+                mini_x = X[bi * batch_size:min((bi + 1) * batch_size, n_train), :]
                 # train model
                 if idx is not None:
-                    mini_idx = idx[bi*batch_size:min((bi+1)*batch_size,n_train),:]
+                    mini_idx = idx[bi * batch_size:min((bi + 1) * batch_size, n_train), :]
                     train_error.append(self.train_model(mini_x, mini_s, mini_idx))
                 else:
                     train_error.append(self.train_model(mini_x, mini_s))
             mean_train_error.append(np.mean(train_error))
-            if not e or not (e+1) % 25:
+            if not e or not (e + 1) % 25:
                 if verbose:
                     print("Mean training error: %.10f" % mean_train_error[-1])
                 # adapt learning rate
-                if e > 500 and (mean_train_error[-1]-0.001 > best_error):
+                if e > 300 and (mean_train_error[-1] - 0.001 > best_error):
                     # we're bouncing, the learning rate is WAY TO HIGH
-                    self.learning_rate.set_value(self.learning_rate.get_value()*0.75)
+                    self.learning_rate.set_value(self.learning_rate.get_value() * 0.75)
                     # might be a problem of min_lrate as well
                     if self.learning_rate.get_value() < self.min_lrate:
                         self.min_lrate *= 0.7
@@ -215,19 +221,19 @@ class SimilarityEncoder(object):
                         self.model.layers[i].b.set_value(l.b.get_value(borrow=False))
                     test_error = []
                     for bi in range(n_batches):
-                        mini_s = S[bi*batch_size:min((bi+1)*batch_size,n_train),:]
-                        mini_x = X[bi*batch_size:min((bi+1)*batch_size,n_train),:]
+                        mini_s = S[bi * batch_size:min((bi + 1) * batch_size, n_train), :]
+                        mini_x = X[bi * batch_size:min((bi + 1) * batch_size, n_train), :]
                         # test model
                         test_error.append(self.test_model(mini_x, mini_s))
                     print("Sanity check, mean test error: %.10f" % np.mean(test_error))
                 else:
-                    self.learning_rate.set_value(max(self.min_lrate, self.learning_rate.get_value()*self.lrate_decay))
+                    self.learning_rate.set_value(max(self.min_lrate, self.learning_rate.get_value() * self.lrate_decay))
             # store best model
             if mean_train_error[-1] < best_error:
                 best_error = mean_train_error[-1]
                 best_layers = [deepcopy(p) for p in self.model.layers]
             # converged?
-            if e > 500 and round(mean_train_error[-1], 10) == round(mean_train_error[-5], 10):
+            if e > 500 and (mean_train_error[-25] - mean_train_error[-1] <= 0.00000001):
                 break
         # use the best model
         for i, l in enumerate(best_layers):
@@ -237,8 +243,8 @@ class SimilarityEncoder(object):
         # one last time just to get the error to double check
         test_error = []
         for bi in range(n_batches):
-            mini_s = S[bi*batch_size:min((bi+1)*batch_size,n_train),:]
-            mini_x = X[bi*batch_size:min((bi+1)*batch_size,n_train),:]
+            mini_s = S[bi * batch_size:min((bi + 1) * batch_size, n_train), :]
+            mini_x = X[bi * batch_size:min((bi + 1) * batch_size, n_train), :]
             # test model
             test_error.append(self.test_model(mini_x, mini_s))
         print("Last mean error: %.10f" % np.mean(test_error))

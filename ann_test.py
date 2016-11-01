@@ -6,17 +6,18 @@ from sklearn.datasets import make_moons, make_circles, make_classification
 
 from ann_models import SupervisedNNModel
 
+
 def linear_regression(y_dim=5, x_dim=10):
-    ## generate training and test data
+    # generate training and test data
     n_train = 1000
-    W = np.random.randint(-4,5,size=(x_dim,y_dim))
-    b = np.random.randint(-2,2,size=(1,y_dim))
-    X = np.random.rand(n_train,x_dim)
-    Y = np.dot(X,W)+b
-    X += np.random.randn(n_train,x_dim)*0.02
-    X_test = np.random.rand(20,x_dim)
-    Y_test = np.dot(X_test,W)+b
-    X_test += np.random.randn(20,x_dim)*0.02 
+    W = np.random.randint(-4, 5, size=(x_dim, y_dim))
+    b = np.random.randint(-2, 2, size=(1, y_dim))
+    X = np.random.rand(n_train, x_dim)
+    Y = np.dot(X, W) + b
+    X += np.random.randn(n_train, x_dim) * 0.02
+    X_test = np.random.rand(20, x_dim)
+    Y_test = np.dot(X_test, W) + b
+    X_test += np.random.randn(20, x_dim) * 0.02
 
     # build, train, and test the model
     model = SupervisedNNModel(x_dim, y_dim)
@@ -25,23 +26,23 @@ def linear_regression(y_dim=5, x_dim=10):
 
     if x_dim == 1 and y_dim == 1:
         plt.figure()
-        plt.plot(X[:,0], Y[:,0], 'm*')
+        plt.plot(X[:, 0], Y[:, 0], 'm*')
         X_plot = np.linspace(np.min(X), np.max(X), 1000)
-        plt.plot(X_plot, model.predict(X_plot[:,np.newaxis]), 'k')
-        plt.plot(X_plot, np.dot(X_plot[:,np.newaxis],W)+b, 'b')
+        plt.plot(X_plot, model.predict(X_plot[:, np.newaxis]), 'k')
+        plt.plot(X_plot, np.dot(X_plot[:, np.newaxis], W) + b, 'b')
         plt.xlabel('x')
         plt.ylabel('y')
 
 
 def nonlinear_regression(y_dim=1, x_dim=1):
-    ## generate training and test data
+    # generate training and test data
     n_train = 1000
-    X = np.random.rand(n_train,x_dim)*np.pi*2.
+    X = np.random.rand(n_train, x_dim) * np.pi * 2.
     Y = np.sin(X)
-    X += np.random.randn(n_train,x_dim)*0.02
-    X_test = np.random.rand(20,x_dim)*np.pi*2.
+    X += np.random.randn(n_train, x_dim) * 0.02
+    X_test = np.random.rand(20, x_dim) * np.pi * 2.
     Y_test = np.sin(X_test)
-    X_test += np.random.randn(20,x_dim)*0.02 
+    X_test += np.random.randn(20, x_dim) * 0.02
 
     # build, train, and test the model
     model = SupervisedNNModel(x_dim, y_dim, hunits=[100, 50], activations=[T.tanh, T.tanh, None])
@@ -50,16 +51,16 @@ def nonlinear_regression(y_dim=1, x_dim=1):
 
     if x_dim == 1 and y_dim == 1:
         plt.figure()
-        plt.plot(X[:,0], Y[:,0], 'm*')
-        X_plot = np.linspace(np.min(X), np.max(X),1000)
-        plt.plot(X_plot, model.predict(X_plot[:,np.newaxis]), 'k')
-        plt.plot(X_plot, np.sin(X_plot),'b')
+        plt.plot(X[:, 0], Y[:, 0], 'm*')
+        X_plot = np.linspace(np.min(X), np.max(X), 1000)
+        plt.plot(X_plot, model.predict(X_plot[:, np.newaxis]), 'k')
+        plt.plot(X_plot, np.sin(X_plot), 'b')
         plt.xlabel('x')
         plt.ylabel('y')
 
 
 def classification(dataset=0):
-    ## generate training and test data
+    # generate training and test data
     n_train = 1000
     if dataset == 0:
         X, Y = make_classification(n_samples=n_train, n_features=2, n_redundant=0, n_informative=2,
@@ -67,7 +68,7 @@ def classification(dataset=0):
         rng = np.random.RandomState(2)
         X += 2 * rng.uniform(size=X.shape)
         X_test, Y_test = make_classification(n_samples=50, n_features=2, n_redundant=0, n_informative=2,
-                                   random_state=1, n_clusters_per_class=1)
+                                             random_state=1, n_clusters_per_class=1)
         X_test += 2 * rng.uniform(size=X_test.shape)
     elif dataset == 1:
         X, Y = make_moons(n_samples=n_train, noise=0.3, random_state=0)
@@ -79,14 +80,13 @@ def classification(dataset=0):
         print "dataset unknown"
         return
 
-
     # build, train, and test the model
     model = SupervisedNNModel(X.shape[1], 2, hunits=[100, 50], activations=[T.tanh, T.tanh, T.nnet.softmax], cost_fun='negative_log_likelihood',
                               error_fun='zero_one_loss', learning_rate=0.01, L1_reg=0., L2_reg=0.)
     model.fit(X, Y)
     print "Test Error: %f" % model.score(X_test, Y_test)
 
-    ### plot dataset + predictions
+    # plot dataset + predictions
     plt.figure()
     x_min, x_max = X[:, 0].min() - .5, X[:, 0].max() + .5
     y_min, y_max = X[:, 1].min() - .5, X[:, 1].max() + .5
@@ -94,7 +94,7 @@ def classification(dataset=0):
                          np.arange(y_min, y_max, 0.02))
     cm = plt.cm.RdBu
     cm_bright = ListedColormap(['#FF0000', '#0000FF'])
-    
+
     Z = model.predict(np.c_[xx.ravel(), yy.ravel()])[:, 1]
 
     # Put the result into a color plot
