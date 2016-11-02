@@ -13,6 +13,7 @@ def get_colors(N=100):
 
 
 def make_3_circles(n_samples, random_state=1):
+    random_state = check_random_state(random_state)
     X = np.ones((3 * n_samples, 3))
     Y_plot = np.ones((3 * n_samples, 1))
     X[:n_samples, :2], _ = make_circles(n_samples=n_samples, noise=0.05, factor=.01, random_state=random_state)
@@ -25,7 +26,7 @@ def make_3_circles(n_samples, random_state=1):
     X[2 * n_samples:, :2], _ = make_circles(n_samples=n_samples, noise=0.05, factor=.01, random_state=random_state)
     Y_plot[2 * n_samples:, 0] = 3
     # shuffle examples
-    idx = np.random.permutation(range(3 * n_samples))
+    idx = random_state.permutation(range(3 * n_samples))
     X, Y_plot = X[idx, :], Y_plot[idx, :]
     # cut to actual size
     X, Y_plot = X[:n_samples, :], Y_plot[:n_samples, :]
