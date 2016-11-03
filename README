@@ -1,9 +1,0 @@
-Read Me:
-
-dependencies (mainly): numpy, scipy, sklearn, theano
-
-- ann.py contains basic theano code to generate a neural network with multiple layers and various activation functions (see also here: http://deeplearning.net/tutorial/index.html)
-- ann_test.py contains some exemplary classification and regression problems to test neural networks created with ann.py
-- similarity_encoder.py contains the SimilarityEncoder class to set up, train, and apply the similarity encoder; right now it is natively set up to have a single weight matrix to project the input to the embedding layer and another to project the embedding to the output layer to estimate the error, more layers and different activation functions would make sense for more complicated kernels than the linear one though
-- utils.py contains some helper functions mostly to load toy datasets and plot results
-- compare_enbeddings.py contains multiple examples for embedding the toy datasets and the digits dataset from sklearn using various standard embedding methods (kPCA, Isomap, ...) and the Similarity Encoder.
