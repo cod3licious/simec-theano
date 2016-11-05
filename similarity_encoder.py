@@ -194,11 +194,6 @@ class SimilarityEncoder(object):
             if verbose:
                 if not e or not (e + 1) % 25:
                     print("Epoch %i" % (e + 1))
-                    if not e or not (e + 1) % 100:
-                        for i, l in enumerate(self.model.layers):
-                            print i
-                            print l.b.get_value()[1]
-                            print l.W.get_value()[1,1]
             train_error = []
             for bi in range(n_batches):
                 mini_s = S[bi * batch_size:min((bi + 1) * batch_size, n_train), :]
@@ -220,7 +215,8 @@ class SimilarityEncoder(object):
                     # might be a problem of min_lrate as well
                     if self.learning_rate.get_value() < self.min_lrate:
                         self.min_lrate *= 0.7
-                    print("Learning rate too high! Reseting to best local minima (error: %.10f)." % best_error)
+                    if verbose:
+                        print("Learning rate too high! Reseting to best local minima (error: %.10f)." % best_error)
                     for i, l in enumerate(best_layers):
                         self.model.layers[i].W.set_value(l.W.get_value(borrow=False))
                         self.model.layers[i].b.set_value(l.b.get_value(borrow=False))
@@ -230,7 +226,8 @@ class SimilarityEncoder(object):
                         mini_x = X[bi * batch_size:min((bi + 1) * batch_size, n_train), :]
                         # test model
                         test_error.append(self.test_model(mini_x, mini_s))
-                    print("Sanity check, mean test error: %.10f" % np.mean(test_error))
+                    if verbose:
+                        print("Sanity check, mean test error: %.10f" % np.mean(test_error))
                 else:
                     self.learning_rate.set_value(max(self.min_lrate, self.learning_rate.get_value() * self.lrate_decay))
             # store best model
