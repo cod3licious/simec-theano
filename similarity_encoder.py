@@ -194,6 +194,11 @@ class SimilarityEncoder(object):
             if verbose:
                 if not e or not (e + 1) % 25:
                     print("Epoch %i" % (e + 1))
+                    if not e or not (e + 1) % 100:
+                        for i, l in enumerate(self.model.layers):
+                            print i
+                            print l.b.get_value()[1]
+                            print l.W.get_value()[1,1]
             train_error = []
             for bi in range(n_batches):
                 mini_s = S[bi * batch_size:min((bi + 1) * batch_size, n_train), :]
