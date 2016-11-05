@@ -7,7 +7,7 @@ from theano import sparse
 from ann import ANN
 
 
-def thr_sigmoid(x):
+def scaled_sigmoid(x):
     # apply a scaled version of the sigmoid to the input to map the data
     # between 0 and 1 if it's between 0 and 1 and threshold it otherwise
     return T.nnet.sigmoid(10. * (x - 0.5))
@@ -35,6 +35,8 @@ def embedding_error(s_est, s_true, error_fun, idx=None):
             return T.mean((s_true - s_est)**2)
     elif error_fun == 'absolute':
         return T.mean(abs(s_true - s_est))
+    elif error_fun == 'cross-entropy':
+        return -T.mean(s_true * T.log(s_est) + (1 - s_true) * T.log(1 - s_est))
     else:
         # is what we were given a function in itself i.e. can we call it?
         try:
