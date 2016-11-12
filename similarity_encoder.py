@@ -48,7 +48,7 @@ def embedding_error(s_est, s_true, error_fun, idx=None):
 class SimilarityEncoder(object):
 
     def __init__(self, n_targets, n_features, e_dim=2, n_out=[], activations=[None, None], error_fun='squared', sparse_features=False,
-                 subsampling=False, lrate=0.1, lrate_decay=0.95, min_lrate=0.04, L1_reg=0., L2_reg=0., orthOT_reg=0.1, orthNN_reg=0., seed=12):
+                 subsampling=False, lrate=0.1, lrate_decay=0.95, min_lrate=0.04, L1_reg=0., L2_reg=0., orthOT_reg=0., orthNN_reg=0., seed=12):
         """
         Constructs the Similarity Encoder
         by default it's a linear SimEc which can be used for visualization (i.e. output is 2D) and should give the same results as PCA/linear kPCA
@@ -211,7 +211,7 @@ class SimilarityEncoder(object):
                 if verbose:
                     print("Mean training error: %.10f" % mean_train_error[-1])
                 # adapt learning rate
-                if e > 300 and (mean_train_error[-1] - 0.001 > best_error):
+                if (e > 300 and (mean_train_error[-1] - 0.001 > best_error)) or np.isnan(mean_train_error[-1]):
                     # we're bouncing, the learning rate is WAY TO HIGH
                     self.learning_rate.set_value(self.learning_rate.get_value() * 0.75)
                     # might be a problem of min_lrate as well
@@ -237,7 +237,9 @@ class SimilarityEncoder(object):
                 best_error = mean_train_error[-1]
                 best_layers = [deepcopy(p) for p in self.model.layers]
             # converged?
-            if e > 500 and (mean_train_error[-25] - mean_train_error[-1] <= 0.00000001):
+            if e > 500 and (mean_train_error[-50] - mean_train_error[-1] <= 0.00000001):
+                if verbose:
+                    print "Converged, terminating early."
                 break
         # use the best model
         for i, l in enumerate(best_layers):

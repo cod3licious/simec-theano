@@ -1,6 +1,7 @@
 import numpy as np
 import theano
 import theano.tensor as T
+from theano import sparse
 
 from ann import ANN
 
@@ -69,7 +70,7 @@ def zero_one_loss(y_pred, y_true):
 class SupervisedNNModel(object):
 
     def __init__(self, x_dim, y_dim, hunits=[], activations=[None], cost_fun='mean_squared_error', error_fun='mean_squared_error',
-                 learning_rate=0.001, L1_reg=0.00, L2_reg=0.001):
+                 sparse_features=False, learning_rate=0.001, L1_reg=0.00, L2_reg=0.001):
         """
         initialize the model
 
@@ -81,6 +82,7 @@ class SupervisedNNModel(object):
                            (list, same length as hunits + 1 (for y_dim)), default [None]
             - cost_fun: type of error used in backpropagation to train the model (default 'mean_squared_error' for regression)
             - error_fun: type of error measure used to compute the test error (default 'mean_squared_error' for regression)
+            - sparse_features: bool, whether the input features will be in form of a sparse matrix (csr)
 
         Examples:
 
@@ -106,7 +108,10 @@ class SupervisedNNModel(object):
         self.y_dim = y_dim
 
         # allocate symbolic variables for the data
-        x = T.matrix('x')    # input data
+        if sparse_features:
+            x = sparse.csr_matrix('x')
+        else:
+            x = T.matrix('x')  # input data
         if error_fun == 'mean_squared_error':
             y = T.matrix('y')    # corresponding labels
         else:
@@ -141,6 +146,14 @@ class SupervisedNNModel(object):
             outputs=self.model.output
         )
 
+        # compile a Theano function that computes the embedding on some data
+        # assuming this is a multilayer model and the embedding is the activation
+        # of the layer before the output
+        self.embed = theano.function(
+            inputs=[x],
+            outputs=self.model.layers[-2].output
+        )
+
         # compute the gradient of cost with respect to all parameters
         # the resulting gradients will be stored in a list gparams
         gparams = [T.grad(cost, param) for param in self.model.params]
@@ -162,20 +175,19 @@ class SupervisedNNModel(object):
             allow_input_downcast=True
         )
 
-    def fit(self, X, Y):
+    def fit(self, X, Y, verbose=True, max_epochs=500):
         """
         fit the model
 
         Inputs:
             - X: input data of dimensions N x x_dim
             - Y: labels corresponding to the input data, size N x y_dim
+            - max_epochs: number of times to go through the training data (default 1000)
         """
         assert X.shape[0] == Y.shape[0], "need labels for all training examples"
         assert X.shape[1] == self.x_dim, "wrong number of features specified when initializing the model"
         # define some variables for training
         n_train = X.shape[0]
-        # number of times to go through the training data
-        max_epochs = 1000
         # work on 20 training examples at a time
         batch_size = 20
         n_batches = int(np.ceil(float(n_train) / batch_size))
@@ -183,7 +195,7 @@ class SupervisedNNModel(object):
         mean_train_error = []
         # do the actual training of the model
         for e in range(max_epochs):
-            if not e or not (e + 1) % 25:
+            if verbose and (not e or not (e + 1) % 25):
                 print("Epoch %i" % (e + 1))
             train_error = []
             for bi in range(n_batches):
@@ -196,7 +208,7 @@ class SupervisedNNModel(object):
                 # train model
                 train_error.append(self.train_model(mini_x, mini_y))
             mean_train_error.append(np.mean(train_error))
-            if not e or not (e + 1) % 25:
+            if verbose and (not e or not (e + 1) % 25):
                 print("Mean training error: %f" % mean_train_error[-1])
         print("Final training error: %f" % mean_train_error[-1])
 
@@ -216,3 +228,15 @@ class SupervisedNNModel(object):
         assert X.shape[0] == Y.shape[0], "need labels for all test examples"
         assert X.shape[1] == self.x_dim, "number of features doesn't match model architecture"
         return self.test_model(X, Y)
+
+    def transform(self, X):
+        """
+        using a fitted model, embed the given data
+
+        Inputs:
+            - X: some data with the same features as the original training data (i.e. n x n_features)
+
+        Returns:
+            - X_embed: the embedded data points (n x e_dim)
+        """
+        return self.embed(X)

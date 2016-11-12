@@ -112,7 +112,7 @@ def plot3d(X, Y_plot, X_test=None, Y_plot_test=None, title='original'):
     plt.title(title, fontsize=20)
 
 
-def plot_digits(X, digits, title=None):
+def plot_digits(X, digits, title=None, plot_box=True):
     colorlist = get_colors(10)
     # Scale and visualize the embedding vectors
     x_min, x_max = np.min(X, 0), np.max(X, 0)
@@ -125,12 +125,12 @@ def plot_digits(X, digits, title=None):
                  color=colorlist[digits.target[i]],
                  fontdict={'weight': 'medium', 'size': 9})
 
-    if hasattr(offsetbox, 'AnnotationBbox'):
+    if plot_box and hasattr(offsetbox, 'AnnotationBbox'):
         # only print thumbnails with matplotlib > 1.0
         shown_images = np.array([[1., 1.]])  # just something big
         for i in range(digits.data.shape[0]):
             dist = np.sum((X[i] - shown_images) ** 2, 1)
-            if np.min(dist) < 4e-3:
+            if np.min(dist) < 4e-2:
                 # don't show points that are too close
                 continue
             shown_images = np.r_[shown_images, [X[i]]]
@@ -139,6 +139,8 @@ def plot_digits(X, digits, title=None):
                 X[i])
             ax.add_artist(imagebox)
     plt.xticks([]), plt.yticks([])
+    plt.xlim(-0.05, 1.05)
+    plt.ylim(-0.05, 1.05)
     if title is not None:
         plt.title(title, fontsize=20)
 
