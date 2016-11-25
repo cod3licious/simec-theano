@@ -1,4 +1,4 @@
-This repository contains the code for the similarity encoder (SimEc) neural network model (and others). To get an overview, first check out the iPython notebook at `examples_simec.ipynb`. For further information see: http://openreview.net/forum?id=SkBsEQYll
+This repository contains the code for the Similarity Encoder (SimEc) neural network model (and others). To get an overview, first check out the iPython notebook at `examples_simec.ipynb`. For further information see: http://openreview.net/forum?id=SkBsEQYll
 
 dependencies: (main code) numpy, theano; (experiments) scipy, sklearn, matplotlib, [nlputils](https://github.com/cod3licious/nlputils)
 

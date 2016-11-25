@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import offsetbox
-from sklearn.datasets import make_moons, make_circles, make_blobs, make_swiss_roll, make_s_curve
+from sklearn.datasets import make_circles, make_blobs, make_swiss_roll, make_s_curve
 from sklearn.utils import check_random_state
 
 
