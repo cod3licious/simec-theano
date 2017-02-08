@@ -13,6 +13,34 @@ def scaled_sigmoid(x):
     return T.nnet.sigmoid(10. * (x - 0.5))
 
 
+def scaled_sigmoid_nonzero(x):
+    # apply a scaled version of the sigmoid to the input to map the data
+    # steep rise
+    m = 8.
+    # is 0.5 for x0 (if c = 0)
+    x0 = x.min() + 0.5*(x.max()-x.min())
+    # offset of c, i.e. sig \in [c, 1]
+    c = 0.
+    return (1.-c)*T.nnet.sigmoid(m * (x - x0)) + c
+
+
+def exp_cutoff(x):
+    # 1 or less with heavy tail
+    # the upper 80% of the values is at 1
+    b = 0.8
+    c = x.min() + b*(x.max()-x.min())
+    # the lower 20% of the values is below y
+    y = 0.15
+    a = y/T.exp((0.2-b)*(x.max()-x.min()))
+    return T.minimum(a * T.exp(x - c), 1.)
+
+
+def minmax_norm(x):
+    # normalize the scores to be between c and 1
+    c = 0.00000000000000000001
+    return (1.-c)*(x-x.min())/x.max() + c
+
+
 def shift_sigmoid(x):
     # apply a scaled version of the sigmoid to the input to map the data
     # between 0 and 1 if it's between 0 and 10 and threshold it otherwise
@@ -37,6 +65,12 @@ def embedding_error(s_est, s_true, error_fun, idx=None):
         return T.mean(abs(s_true - s_est))
     elif error_fun == 'cross-entropy':
         return -T.mean(s_true * T.log(s_est) + (1 - s_true) * T.log(1 - s_est))
+    elif error_fun == 'kl-divergence':
+        # make sure s_est is never truly 0 otherwise you'll get errors (this is your responsibility!)
+        # also since log(0) is not defined but the kl-divergence is 0 if s_true is 0, we can ignore these values
+        return T.mean(abs(s_true * T.log(s_true/s_est)))
+    elif error_fun == 'symkl-divergence':
+        return T.mean(s_true * T.log(s_true/s_est) + s_est * T.log(s_est/s_true))
     else:
         # is what we were given a function in itself i.e. can we call it?
         try:
@@ -48,7 +82,8 @@ def embedding_error(s_est, s_true, error_fun, idx=None):
 class SimilarityEncoder(object):
 
     def __init__(self, n_targets, n_features, e_dim=2, n_out=[], activations=[None, None], error_fun='squared', sparse_features=False,
-                 subsampling=False, lrate=0.1, lrate_decay=0.95, min_lrate=0.04, L1_reg=0., L2_reg=0., orthOT_reg=0., orthNN_reg=0., seed=12):
+                 subsampling=False, lrate=0.1, lrate_decay=0.95, min_lrate=0.04, L1_reg=0., L2_reg=0., orthOT_reg=0., orthNN_reg=0.,
+                 normOT_reg=0., seed=12):
         """
         Constructs the Similarity Encoder
         by default it's a linear SimEc which can be used for visualization (i.e. output is 2D) and should give the same results as PCA/linear kPCA
@@ -114,6 +149,7 @@ class SimilarityEncoder(object):
                 + L2_reg * self.model.L2_sqr
                 + orthNN_reg * self.model.orthNN
                 + orthOT_reg * self.model.orthOT
+                + normOT_reg * self.model.normOT
             )
         else:
             self.cost = (
@@ -122,6 +158,7 @@ class SimilarityEncoder(object):
                 + L2_reg * self.model.L2_sqr
                 + orthNN_reg * self.model.orthNN
                 + orthOT_reg * self.model.orthOT
+                + normOT_reg * self.model.normOT
             )
 
         # compile a Theano function that computes the embedding on some data
@@ -211,7 +248,7 @@ class SimilarityEncoder(object):
                 if verbose:
                     print("Mean training error: %.10f" % mean_train_error[-1])
                 # adapt learning rate
-                if (e > 300 and (mean_train_error[-1] - 0.001 > best_error)) or np.isnan(mean_train_error[-1]):
+                if (e > 300 and (mean_train_error[-1] - 0.00001 > best_error)) or np.isnan(mean_train_error[-1]):
                     # we're bouncing, the learning rate is WAY TO HIGH
                     self.learning_rate.set_value(self.learning_rate.get_value() * 0.75)
                     # might be a problem of min_lrate as well
@@ -237,7 +274,7 @@ class SimilarityEncoder(object):
                 best_error = mean_train_error[-1]
                 best_layers = [deepcopy(p) for p in self.model.layers]
             # converged?
-            if e > 500 and (mean_train_error[-50] - mean_train_error[-1] <= 0.00000001):
+            if e > 500 and (abs(mean_train_error[-50] - mean_train_error[-1]) <= 0.00000001):
                 if verbose:
                     print "Converged, terminating early."
                 break

@@ -109,3 +109,5 @@ class ANN(object):
         d = self.layers[-1].W.get_value().shape[0]
         self.orthOT = T.abs_(T.dot(self.layers[-1].W, self.layers[-1].W.T) - T.nlinalg.diag(
             T.nlinalg.diag(T.dot(self.layers[-1].W, self.layers[-1].W.T)))).sum() / float(d * d - d)
+        # unit length weights in the last layer
+        self.normOT = T.abs_(1. - T.sqrt((self.layers[-1].W ** 2).sum(axis=0))).sum() / float(self.layers[-1].W.get_value().shape[1])

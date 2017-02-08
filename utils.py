@@ -160,12 +160,13 @@ def plot_mnist(X, y, X_test=None, y_test=None, title=None):
         plt.text(X[i, 0], X[i, 1], str(y[i]),
                  color=colorlist[y[i]],
                  fontdict={'weight': 'medium', 'size': 9},
-                 alpha=alpha)
+                 alpha=1.)
     if (X_test is not None) and (y_test is not None):
         for i in range(X_test.shape[0]):
             plt.text(X_test[i, 0], X_test[i, 1], str(y_test[i]),
                      color=colorlist[y_test[i]],
-                     fontdict={'weight': 'medium', 'size': 9})
+                     fontdict={'weight': 'medium', 'size': 9},
+                     alpha=alpha)
 
     plt.xticks([]), plt.yticks([])
     plt.xlim(-0.05, 1.05)
@@ -185,8 +186,8 @@ def plot_20news(X, y, target_names, X_test=None, y_test=None, title=None, legend
     # plot scatter plot
     plt.figure()
     if (X_test is not None) and (y_test is not None):
-        plot_scatter(X, y, 0.2)
-        plot_scatter(X_test, y_test, 1.)
+        plot_scatter(X, y, 1.)
+        plot_scatter(X_test, y_test, 0.4)
     else:
         plot_scatter(X, y)
     if legend:
