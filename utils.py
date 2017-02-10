@@ -147,26 +147,24 @@ def plot_digits(X, digits, title=None, plot_box=True):
 
 def plot_mnist(X, y, X_test=None, y_test=None, title=None):
     plt.figure()
-    alpha = 1
     colorlist = get_colors(10)
     # Scale and visualize the embedding vectors
     x_min, x_max = np.min(X, 0), np.max(X, 0)
     if (X_test is not None) and (y_test is not None):
         x_min, x_max = np.min(np.array([x_min, np.min(X_test, 0)]), 0), np.max(np.array([x_max, np.max(X_test, 0)]), 0)
         X_test = (X_test - x_min) / (x_max - x_min)
-        alpha = 0.4
     X = (X - x_min) / (x_max - x_min)
-    for i in range(X.shape[0]):
-        plt.text(X[i, 0], X[i, 1], str(y[i]),
-                 color=colorlist[y[i]],
-                 fontdict={'weight': 'medium', 'size': 9},
-                 alpha=1.)
     if (X_test is not None) and (y_test is not None):
         for i in range(X_test.shape[0]):
             plt.text(X_test[i, 0], X_test[i, 1], str(y_test[i]),
                      color=colorlist[y_test[i]],
                      fontdict={'weight': 'medium', 'size': 9},
-                     alpha=alpha)
+                     alpha=0.4)
+    for i in range(X.shape[0]):
+        plt.text(X[i, 0], X[i, 1], str(y[i]),
+                 color=colorlist[y[i]],
+                 fontdict={'weight': 'medium', 'size': 9},
+                 alpha=1.)
 
     plt.xticks([]), plt.yticks([])
     plt.xlim(-0.05, 1.05)
@@ -182,14 +180,14 @@ def plot_20news(X, y, target_names, X_test=None, y_test=None, title=None, legend
         y = np.array(y)
         for i, l in enumerate(target_names):
             plt.scatter(X[y == i, 0], X[y == i, 1], c=colorlist[i], alpha=alpha,
-                        edgecolors='none', label=l if alpha == 1 else None)  # , rasterized=True)
+                        edgecolors='none', label=l if alpha >= 0.5 else None)  # , rasterized=True)
     # plot scatter plot
     plt.figure()
     if (X_test is not None) and (y_test is not None):
-        plot_scatter(X, y, 1.)
         plot_scatter(X_test, y_test, 0.4)
+        plot_scatter(X, y, 1.)
     else:
-        plot_scatter(X, y)
+        plot_scatter(X, y, 0.6)
     if legend:
         plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), scatterpoints=1)
     plt.xticks([]), plt.yticks([])
