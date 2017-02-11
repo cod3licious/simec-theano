@@ -68,33 +68,21 @@ def original_NN_error(S_org, D_emb):
     D = D_emb - np.min(D_emb)
     S /= np.max(S)
     D /= np.max(D)
-    iu = np.triu_indices(S.shape[0], 1)
-    sims = S[iu]
-    dists = D[iu]
-    # sort by closest distances and highest similarities (globally, not for individual data points!)
-    NN_O = np.argsort(sims)[::-1]
-    NN_E = np.argsort(dists)
+    # get index for k nearest neighbors in original and embedding space
+    NN_O = np.ogrid[:S.shape[0], :S.shape[1]]
+    NN_O[1] = np.fliplr(np.argsort(S))
+    NN_E = np.ogrid[:D.shape[0], :D.shape[1]]
+    NN_E[1] = np.argsort(D)
     # compute raw error for every NN position
-    E = dists[NN_O] - dists[NN_E]
+    E = D[NN_O] - D[NN_E]
     # points too close don't count, thats a problem of the embedding error
-    # (but don't just set them to 0 or it'll ruin the mean)
     E[E < 0] = 0.
-    # bin by NN
-    parts = np.linspace(0, len(E), 101, dtype=int)
-    sims = sims[NN_O]
-    # buffer beginning and end
-    s = [sims[0]]
-    err_mean, err_std = [E[0] if E[0] >= 0 else 0.], [0.]
-    for i, p in enumerate(parts[:-1]):
-        val = E[p:parts[i+1]]
-        val = val[val >= 0]
-        err_mean.append(np.mean(val) if len(val) else 0.)
-        err_std.append(np.std(val) if len(val) else 0.)
-        s.append(np.mean(sims[p:parts[i+1]]))
-    err_mean.append(E[-1] if E[-1] >= 0 else 0.)
-    err_std.append(0.)
-    s.append(sims[-1])
-    return np.array(err_mean), np.array(err_std), np.array(s)
+    # accumulate the sum for all neighborhood sizes
+    w = np.ones(S.shape[1]) / np.arange(1, S.shape[1] + 1)
+    E_acc = w * np.add.accumulate(E, 1)
+    # take mean and std across data points --> 2 arrays for all values of k
+    err_mean, err_std = np.mean(E_acc, 0), np.std(E_acc, 0)
+    return err_mean, err_std
 
 
 def embedding_NN_error(S_org, D_emb):
@@ -112,35 +100,25 @@ def embedding_NN_error(S_org, D_emb):
     D = D_emb - np.min(D_emb)
     S /= np.max(S)
     D /= np.max(D)
-    iu = np.triu_indices(S.shape[0], 1)
-    sims = S[iu]
-    dists = D[iu]
-    # sort by closest distances and highest similarities (globally, not for individual data points!)
-    NN_O = np.argsort(sims)[::-1]
-    NN_E = np.argsort(dists)
+    # get index for k nearest neighbors in original and embedding space
+    NN_O = np.ogrid[:S.shape[0], :S.shape[1]]
+    NN_O[1] = np.fliplr(np.argsort(S))
+    NN_E = np.ogrid[:D.shape[0], :D.shape[1]]
+    NN_E[1] = np.argsort(D)
     # compute raw error for every NN position
-    E = sims[NN_O] - sims[NN_E]
+    E = S[NN_O] - S[NN_E]
     # "too" similar is ok - the original error deals with this
     # (but don't just set them to 0 or it'll ruin the mean)
     E[E < 0] = 0.
-    # bin by embedding distances
-    parts = np.linspace(0, len(E), 101, dtype=int)
-    dists = dists[NN_E]
-    d = [dists[0]]
-    err_mean, err_std = [E[0] if E[0] >= 0 else 0.], [0.]
-    for i, p in enumerate(parts[:-1]):
-        val = E[p:parts[i+1]]
-        val = val[val >= 0]
-        err_mean.append(np.mean(val) if len(val) else 0.)
-        err_std.append(np.std(val) if len(val) else 0.)
-        d.append(np.mean(dists[p:parts[i+1]]))
-    err_mean.append(E[-1] if E[-1] >= 0 else 0.)
-    err_std.append(0.)
-    d.append(dists[-1])
-    return np.array(err_mean), np.array(err_std), np.array(d)
+    # accumulate the sum for all neighborhood sizes
+    w = np.ones(S.shape[1]) / np.arange(1, S.shape[1] + 1)
+    E_acc = w * np.add.accumulate(E, 1)
+    # take mean and std across data points --> 2 arrays for all values of k
+    err_mean, err_std = np.mean(E_acc, 0), np.std(E_acc, 0)
+    return err_mean, err_std
 
 
-def plot_errors(err_dict, title, xlabel='', ylabel='error', xlim=[0., 1.], ylim=None, models=[]):
+def plot_errors(err_dict, title, xlabel='k', ylabel='error', xlim=None, ylim=None, models=[]):
     """
     Inputs:
         - err_dict: a dict with {'model':{'err_mean':[], 'err_min':[], 'err_max':[]}} with mean, min and max error values for multiple models
@@ -149,9 +127,9 @@ def plot_errors(err_dict, title, xlabel='', ylabel='error', xlim=[0., 1.], ylim=
     if not models:
         models = sorted(err_dict.keys())
     colors = get_colors(len(models))
+    x = range(1, len(err_dict[err_dict.keys()[0]]['err_mean']) + 1)
     for i, model in enumerate(models):
         # plot mean and std
-        x = err_dict[model]['x']  # corresponding distances or similarities
         plt.plot(x, err_dict[model]['err_mean'], c=colors[i], label=model)
         plt.plot(x, err_dict[model]['err_mean'] + err_dict[model]['err_std'], '--', c=colors[i], alpha=0.1)
         plt.plot(x, err_dict[model]['err_mean'] - err_dict[model]['err_std'], '--', c=colors[i], alpha=0.1)
@@ -162,7 +140,8 @@ def plot_errors(err_dict, title, xlabel='', ylabel='error', xlim=[0., 1.], ylim=
     plt.title(title)
     if len(err_dict) > 1:
         plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.xlim(xlim)
+    if xlim is not None:
+        plt.xlim(xlim)
     if ylim is not None:
         plt.ylim(ylim)
     else:
