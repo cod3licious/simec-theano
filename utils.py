@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import offsetbox
+from scipy.spatial.distance import pdist
 from sklearn.datasets import make_circles, make_blobs, make_swiss_roll, make_s_curve
 from sklearn.utils import check_random_state
 
@@ -193,3 +194,19 @@ def plot_20news(X, y, target_names, X_test=None, y_test=None, title=None, legend
     plt.xticks([]), plt.yticks([])
     if title is not None:
         plt.title(title, fontsize=20)
+
+
+def check_embed_match(X_embed1, X_embed2):
+    """
+    Check whether the two embeddings are almost the same by computing their normalized euclidean distances
+    in the embedding space and checking the correlation.
+    Inputs:
+        - X_embed1, X_embed2: two Nxd matrices with coordinates in the embedding space
+    Returns:
+        - r: Pearson correlation coefficient between the normalized distances of the points
+    """
+    D_emb1 = pdist(X_embed1, 'euclidean')
+    D_emb2 = pdist(X_embed2, 'euclidean')
+    D_emb1 /= D_emb1.max()
+    D_emb2 /= D_emb2.max()
+    return np.corrcoef(D_emb1, D_emb2)[0, 1]
