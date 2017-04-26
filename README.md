@@ -1,3 +1,5 @@
+## READ ME
+
 This repository contains the code for the Similarity Encoder (SimEc) neural network model (and others). To get an overview, first check out the iPython notebook at `examples_simec.ipynb`. 
 Further information and theoretical background can be found in the accompanying [paper](http://arxiv.org/abs/1702.01824).
 

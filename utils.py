@@ -9,7 +9,7 @@ from sklearn.utils import check_random_state
 
 
 def get_colors(N=100):
-    HSV_tuples = [(x * 1.0 / N, 1., 0.8) for x in range(N)]
+    HSV_tuples = [(x * 1. / (N+1), 1., 0.8) for x in range(N)]
     return map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
 
 
