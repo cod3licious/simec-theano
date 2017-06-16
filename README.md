@@ -14,6 +14,7 @@ dependencies: (main code) numpy, theano; (experiments) scipy, sklearn, matplotli
 - `ann_test.py` contains some exemplary classification and regression problems to test the `ann_models` neural networks.
 - `utils.py` contains some helper functions mostly to load datasets and plot results used by `examples_simec.ipynb`.
 - `examples_simec.ipynb` is an iPython notebook with multiple examples showing embeddings of image and text datasets created using standard dimensionality reduction algorithms (kPCA, Isomap, ...) as well as Similarity Encoder models with different network architectures, cost functions, etc.
+- `classify_cancer.py` contains code to classify the [cancer papers](https://github.com/cod3licious/cancer_papers) dataset with on different SimEc features.
 
 
 If you have any questions please don't hesitate to send me an [email](mailto:cod3licious@gmail.com) and of course if you should find any bugs or want to contribute other improvements, pull requests are very welcome!

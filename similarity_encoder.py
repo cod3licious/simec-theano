@@ -218,7 +218,7 @@ class SimilarityEncoder(object):
         assert S.shape[1] == self.n_targets, "wrong number of targets specified when initializing the model"
         # normalize similarity matrix, other wise the weights will overshoot (turn
         # to nan) / we would have to be too careful with the learning rate
-        S /= np.max(np.abs(S))
+        S = S/np.max(np.abs(S))
         # define some variables for training
         n_train = X.shape[0]
         # work on 20 training examples at a time
@@ -282,7 +282,7 @@ class SimilarityEncoder(object):
         for i, l in enumerate(best_layers):
             self.model.layers[i].W.set_value(l.W.get_value(borrow=False))
             self.model.layers[i].b.set_value(l.b.get_value(borrow=False))
-        print("Final training error: %.10f; lowest error: %.10f" % (mean_train_error[-1], best_error))
+        print("Final training error after %i epochs: %.10f; lowest error: %.10f" % (e, mean_train_error[-1], best_error))
         # one last time just to get the error to double check
         test_error = []
         for bi in range(n_batches):

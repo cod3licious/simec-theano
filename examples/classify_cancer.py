@@ -5,11 +5,10 @@ import sklearn.metrics as skmet
 
 # https://github.com/cod3licious/nlputils
 from nlputils.features import FeatureTransform, features2mat
-from nlputils.dict_utils import select_copy
 from simec.similarity_encoder import SimilarityEncoder, scaled_sigmoid
 
 # https://github.com/cod3licious/cancer_papers
-from cancer_papers.load_cancer import articles2dict
+from datasets.cancer_papers.load_cancer import articles2dict
 
 
 def classify_sklearn(X, X_test, y, y_test):
@@ -30,14 +29,14 @@ if __name__ == '__main__':
     # split in train and test dataset + get label vectors
     np.random.seed(42)
     doc_ids = list(np.random.permutation(sorted(textdict.keys())))[:10000]
-    textdict = select_copy(textdict, doc_ids)
+    textdict = {d: textdict[d] for d in doc_ids}
     train_ids = doc_ids[:int(.8 * len(doc_ids))]
     test_ids = doc_ids[int(.8 * len(doc_ids)):]
     y_train_k = np.array([doccats_k[i] for i in train_ids])
     y_train_p = np.array([doccats_p[i] for i in train_ids])
     y_test_k = np.array([doccats_k[i] for i in test_ids])
     y_test_p = np.array([doccats_p[i] for i in test_ids])
-    print "%i training documents and %i test documents" % (len(train_ids), len(test_ids))
+    print "[INFO] %i training documents and %i test documents" % (len(train_ids), len(test_ids))
 
     # compute length renormed tf-idf features and analyze
     print "[INFO] tf-idf with **length** renorm"
@@ -45,7 +44,7 @@ if __name__ == '__main__':
     docfeats = ft.texts2features(textdict, train_ids)
     print "[INFO] train matrix...",
     X, featurenames = features2mat(docfeats, train_ids)
-    print "test matrix..."
+    print "with %i features ...test matrix..." % len(featurenames)
     X_test, _ = features2mat(docfeats, test_ids, featurenames)
     # classify
     print "[INFO] classify based on **keyword**"

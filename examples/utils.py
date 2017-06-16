@@ -1,9 +1,9 @@
 import colorsys
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import offsetbox
 from scipy.spatial.distance import pdist
+from scipy.stats import spearmanr
 from sklearn.datasets import make_circles, make_blobs, make_swiss_roll, make_s_curve
 from sklearn.utils import check_random_state
 
@@ -210,3 +210,30 @@ def check_embed_match(X_embed1, X_embed2):
     D_emb1 /= D_emb1.max()
     D_emb2 /= D_emb2.max()
     return np.corrcoef(D_emb1, D_emb2)[0, 1]
+
+
+def check_similarity_match(X_embed, S):
+    """
+    Since SimEcs are supposed to project the data into an embedding space where the target similarities
+    can be linearly approximated, check if X_embed*X_embed^T = S
+    (check mean squared error and Spearman correlation coefficient)
+    Inputs:
+        - X_embed: Nxd matrix with coordinates in the embedding space
+        - S: NxN matrix with target similarities (do whatever transformations were done before using this
+             as input to the SimEc, e.g. centering, etc.)
+    Returns:
+        - msq, rho: mean squared error and Spearman correlation coefficent between linear kernel of embedding
+                    and target similarities (mean squared error is more exact, corrcoef a more relaxed error measure)
+    """
+    # compute linear kernel as approximated similarities
+    S_approx = X_embed.dot(X_embed.T)
+    # to get results that are comparable across similarity measures, we have to normalize them somehow,
+    # in this case by dividing by the absolute max value of both similarity matrices
+    n = max(np.abs(S_approx).max(), np.abs(S).max())
+    S /= n
+    S_approx /= n
+    # compute mean squared error
+    msq = np.mean((S - S_approx) ** 2)
+    # compute Spearman correlation coefficient
+    rho = spearmanr(S, S_approx, axis=None)[0]
+    return msq, rho
