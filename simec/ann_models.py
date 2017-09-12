@@ -149,10 +149,11 @@ class SupervisedNNModel(object):
         # compile a Theano function that computes the embedding on some data
         # assuming this is a multilayer model and the embedding is the activation
         # of the layer before the output
-        self.embed = theano.function(
-            inputs=[x],
-            outputs=self.model.layers[-2].output
-        )
+        if len(self.model.layers) > 1:
+            self.embed = theano.function(
+                inputs=[x],
+                outputs=self.model.layers[-2].output
+            )
 
         # compute the gradient of cost with respect to all parameters
         # the resulting gradients will be stored in a list gparams

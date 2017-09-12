@@ -82,7 +82,7 @@ def embedding_error(s_est, s_true, error_fun, idx=None):
 class SimilarityEncoder(object):
 
     def __init__(self, n_targets, n_features, e_dim=2, n_out=[], activations=[None, None], error_fun='squared', sparse_features=False,
-                 subsampling=False, lrate=0.1, lrate_decay=0.95, min_lrate=0.04, L1_reg=0., L2_reg=0., orthOT_reg=0., orthNN_reg=0.,
+                 subsampling=False, lrate=0.1, lrate_decay=1., min_lrate=0.04, L1_reg=0., L2_reg=0., orthOT_reg=0., orthNN_reg=0.,
                  normOT_reg=0., seed=12):
         """
         Constructs the Similarity Encoder
@@ -96,11 +96,11 @@ class SimilarityEncoder(object):
             - activations: for the NN model architecture
             - error_fun: which error measure should be used in backpropagation (default: 'squared', other values: 'absolute')
             - sparse_features: bool, whether the input features will be in form of a sparse matrix (csr)
-            - lrate: learning rate (default 0.2)
-            - lrate_decay: learning rate decay (default 0.95, set to 1 for no decay)
+            - lrate: learning rate (default 0.1)
+            - lrate_decay: learning rate decay (default 1., set to less than 1 to get a decay)
             - min_lrate: in case of lrate_decay, minimum to which the learning rate will decay (default 0.04)
             - L1_reg, L2_reg: standard NN weight regularization terms (default 0.)
-            - orthOT_reg: regularization parameter to encourage orthogonal weights in the output layer (default 0.1)
+            - orthOT_reg: regularization parameter to encourage orthogonal weights in the output layer (default 0.)
                           (helpful to get the same solution as kPCA as there the embeddings are orthogonal as well (eigenvectors...))
             - orthNN_reg: regularization parameter to encourage orthogonal weights in the other layers besides the output layer (default 0.)
                           (this does not help in most cases, only for the linear SimEc to mimic regular PCA where the projection vectors are orthogonal)
@@ -282,7 +282,7 @@ class SimilarityEncoder(object):
         for i, l in enumerate(best_layers):
             self.model.layers[i].W.set_value(l.W.get_value(borrow=False))
             self.model.layers[i].b.set_value(l.b.get_value(borrow=False))
-        print("Final training error after %i epochs: %.10f; lowest error: %.10f" % (e, mean_train_error[-1], best_error))
+        print("Final training error after %i epochs: %.10f; lowest error: %.10f" % (e+1, mean_train_error[-1], best_error))
         # one last time just to get the error to double check
         test_error = []
         for bi in range(n_batches):

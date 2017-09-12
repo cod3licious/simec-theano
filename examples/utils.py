@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import offsetbox
 from scipy.spatial.distance import pdist
-from scipy.stats import spearmanr
+from scipy.stats import spearmanr, pearsonr
 from sklearn.datasets import make_circles, make_blobs, make_swiss_roll, make_s_curve
 from sklearn.utils import check_random_state
 
@@ -222,18 +222,20 @@ def check_similarity_match(X_embed, S):
         - S: NxN matrix with target similarities (do whatever transformations were done before using this
              as input to the SimEc, e.g. centering, etc.)
     Returns:
-        - msq, rho: mean squared error and Spearman correlation coefficent between linear kernel of embedding
-                    and target similarities (mean squared error is more exact, corrcoef a more relaxed error measure)
+        - msq, rho, r: mean squared error, Spearman and Pearson correlation coefficent between linear kernel of embedding
+                       and target similarities (mean squared error is more exact, corrcoef a more relaxed error measure)
     """
     # compute linear kernel as approximated similarities
     S_approx = X_embed.dot(X_embed.T)
     # to get results that are comparable across similarity measures, we have to normalize them somehow,
-    # in this case by dividing by the absolute max value of both similarity matrices
-    n = max(np.abs(S_approx).max(), np.abs(S).max())
-    S /= n
+    # in this case by dividing by the absolute max value of the target similarity matrix
+    n = np.max(np.abs(S))
+    S_norm = S/n
     S_approx /= n
     # compute mean squared error
-    msq = np.mean((S - S_approx) ** 2)
+    msqe = np.mean((S_norm - S_approx) ** 2)
     # compute Spearman correlation coefficient
-    rho = spearmanr(S, S_approx, axis=None)[0]
-    return msq, rho
+    rho = spearmanr(S_norm.flatten(), S_approx.flatten())[0]
+    # compute Pearson correlation coefficient
+    r = pearsonr(S_norm.flatten(), S_approx.flatten())[0]
+    return msqe, rho, r
