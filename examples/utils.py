@@ -1,3 +1,7 @@
+from __future__ import division
+from __future__ import print_function
+from builtins import str
+from builtins import range
 import colorsys
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,7 +14,7 @@ from sklearn.utils import check_random_state
 
 def get_colors(N=100):
     HSV_tuples = [(x * 1. / (N+1), 1., 0.8) for x in range(N)]
-    return map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
+    return [colorsys.hsv_to_rgb(*x) for x in HSV_tuples]
 
 
 def make_3_circles(n_samples, random_state=1):
@@ -27,7 +31,7 @@ def make_3_circles(n_samples, random_state=1):
     X[2 * n_samples:, :2], _ = make_circles(n_samples=n_samples, noise=0.05, factor=.01, random_state=random_state)
     Y_plot[2 * n_samples:, 0] = 3
     # shuffle examples
-    idx = random_state.permutation(range(3 * n_samples))
+    idx = random_state.permutation(list(range(3 * n_samples)))
     X, Y_plot = X[idx, :], Y_plot[idx, :]
     # cut to actual size
     X, Y_plot = X[:n_samples, :], Y_plot[:n_samples, :]

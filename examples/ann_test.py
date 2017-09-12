@@ -1,3 +1,5 @@
+from __future__ import division
+from __future__ import print_function
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import numpy as np
@@ -22,7 +24,7 @@ def linear_regression(y_dim=5, x_dim=10):
     # build, train, and test the model
     model = SupervisedNNModel(x_dim, y_dim)
     model.fit(X, Y)
-    print "Test Error: %f" % model.score(X_test, Y_test)
+    print("Test Error: %f" % model.score(X_test, Y_test))
 
     if x_dim == 1 and y_dim == 1:
         plt.figure()
@@ -47,7 +49,7 @@ def nonlinear_regression(y_dim=1, x_dim=1):
     # build, train, and test the model
     model = SupervisedNNModel(x_dim, y_dim, hunits=[100, 50], activations=[T.tanh, T.tanh, None])
     model.fit(X, Y)
-    print "Test Error: %f" % model.score(X_test, Y_test)
+    print("Test Error: %f" % model.score(X_test, Y_test))
 
     if x_dim == 1 and y_dim == 1:
         plt.figure()
@@ -77,14 +79,14 @@ def classification(dataset=0):
         X, Y = make_circles(n_samples=n_train, noise=0.2, factor=0.5, random_state=1)
         X_test, Y_test = make_circles(n_samples=50, noise=0.2, factor=0.5, random_state=1)
     else:
-        print "dataset unknown"
+        print("dataset unknown")
         return
 
     # build, train, and test the model
     model = SupervisedNNModel(X.shape[1], 2, hunits=[100, 50], activations=[T.tanh, T.tanh, T.nnet.softmax], cost_fun='negative_log_likelihood',
                               error_fun='zero_one_loss', learning_rate=0.01, L1_reg=0., L2_reg=0.)
     model.fit(X, Y)
-    print "Test Error: %f" % model.score(X_test, Y_test)
+    print("Test Error: %f" % model.score(X_test, Y_test))
 
     # plot dataset + predictions
     plt.figure()

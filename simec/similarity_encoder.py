@@ -1,10 +1,16 @@
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import zip
+from builtins import range
+from builtins import object
 from copy import deepcopy
 import numpy as np
 import theano
 import theano.tensor as T
 from theano import sparse
 
-from ann import ANN
+from .ann import ANN
 
 
 def scaled_sigmoid(x):
@@ -276,7 +282,7 @@ class SimilarityEncoder(object):
             # converged?
             if e > 500 and (abs(mean_train_error[-50] - mean_train_error[-1]) <= 0.00000001):
                 if verbose:
-                    print "Converged, terminating early."
+                    print("Converged, terminating early.")
                 break
         # use the best model
         for i, l in enumerate(best_layers):
