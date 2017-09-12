@@ -6,11 +6,12 @@ import numpy as np
 import theano.tensor as T
 from sklearn.datasets import make_moons, make_circles, make_classification
 
-from ann_models import SupervisedNNModel
+from simec.ann_models import SupervisedNNModel
 
 
 def linear_regression(y_dim=5, x_dim=10):
     # generate training and test data
+    np.random.seed(15)
     n_train = 1000
     W = np.random.randint(-4, 5, size=(x_dim, y_dim))
     b = np.random.randint(-2, 2, size=(1, y_dim))
@@ -28,16 +29,19 @@ def linear_regression(y_dim=5, x_dim=10):
 
     if x_dim == 1 and y_dim == 1:
         plt.figure()
-        plt.plot(X[:, 0], Y[:, 0], 'm*')
+        plt.plot(X[:, 0], Y[:, 0], 'm*', label='data samples')
         X_plot = np.linspace(np.min(X), np.max(X), 1000)
-        plt.plot(X_plot, model.predict(X_plot[:, np.newaxis]), 'k')
-        plt.plot(X_plot, np.dot(X_plot[:, np.newaxis], W) + b, 'b')
+        plt.plot(X_plot, model.predict(X_plot[:, np.newaxis]), 'g', label='prediction')
+        plt.plot(X_plot, np.dot(X_plot[:, np.newaxis], W) + b, 'k', label='true curve')
         plt.xlabel('x')
         plt.ylabel('y')
+        plt.title('Linear Regression Problem')
+        plt.legend()
 
 
 def nonlinear_regression(y_dim=1, x_dim=1):
     # generate training and test data
+    np.random.seed(15)
     n_train = 1000
     X = np.random.rand(n_train, x_dim) * np.pi * 2.
     Y = np.sin(X)
@@ -53,12 +57,14 @@ def nonlinear_regression(y_dim=1, x_dim=1):
 
     if x_dim == 1 and y_dim == 1:
         plt.figure()
-        plt.plot(X[:, 0], Y[:, 0], 'm*')
+        plt.plot(X[:, 0], Y[:, 0], 'm*', label='data samples')
         X_plot = np.linspace(np.min(X), np.max(X), 1000)
-        plt.plot(X_plot, model.predict(X_plot[:, np.newaxis]), 'k')
-        plt.plot(X_plot, np.sin(X_plot), 'b')
+        plt.plot(X_plot, model.predict(X_plot[:, np.newaxis]), 'g', label='prediction')
+        plt.plot(X_plot, np.sin(X_plot), 'k', label='true curve')
         plt.xlabel('x')
         plt.ylabel('y')
+        plt.title('Non-Linear Regression Problem')
+        plt.legend()
 
 
 def classification(dataset=0):
@@ -112,6 +118,7 @@ def classification(dataset=0):
     plt.ylim(yy.min(), yy.max())
     plt.xticks(())
     plt.yticks(())
+    plt.title('Classification Problem (%i)' % dataset)
 
 
 if __name__ == '__main__':
