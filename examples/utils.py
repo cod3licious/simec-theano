@@ -99,8 +99,8 @@ def load_dataset(dataset, n_samples, random_state=1, n_features=3):
 def plot2d(X, Y_plot, X_test=None, Y_plot_test=None, title='original'):
     plt.figure()
     if (X_test is not None) and (Y_plot_test is not None):
-        plt.scatter(X[:, 0], X[:, 1], c=Y_plot, alpha=0.2)
-        plt.scatter(X_test[:, 0], X_test[:, 1], c=Y_plot_test, alpha=1)
+        plt.scatter(X[:, 0], X[:, 1], c=Y_plot, alpha=1)
+        plt.scatter(X_test[:, 0], X_test[:, 1], c=Y_plot_test, alpha=0.3)
     else:
         plt.scatter(X[:, 0], X[:, 1], c=Y_plot, alpha=1)
     plt.title(title, fontsize=20)
@@ -110,8 +110,8 @@ def plot3d(X, Y_plot, X_test=None, Y_plot_test=None, title='original'):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     if (X_test is not None) and (Y_plot_test is not None):
-        ax.scatter(X[:, 0], X[:, 1], X[:, 2], c=Y_plot, alpha=0.2)
-        ax.scatter(X_test[:, 0], X_test[:, 1], X_test[:, 2], c=Y_plot_test, alpha=1)
+        ax.scatter(X[:, 0], X[:, 1], X[:, 2], c=Y_plot, alpha=1)
+        ax.scatter(X_test[:, 0], X_test[:, 1], X_test[:, 2], c=Y_plot_test, alpha=0.3)
     else:
         ax.scatter(X[:, 0], X[:, 1], X[:, 2], c=Y_plot, alpha=1)
     plt.title(title, fontsize=20)
