@@ -170,7 +170,47 @@ def plot_mnist(X, y, X_test=None, y_test=None, title=None):
                  color=colorlist[y[i]],
                  fontdict={'weight': 'medium', 'size': 9},
                  alpha=1.)
+    plt.xticks([]), plt.yticks([])
+    plt.xlim(-0.05, 1.05)
+    plt.ylim(-0.05, 1.05)
+    if title is not None:
+        plt.title(title, fontsize=20)
 
+
+def plot_mnist2(X, y, X_test=None, y_test=None, X_original=None, title=None):
+    plt.figure()
+    ax = plt.subplot(111)
+    colorlist = get_colors(10)
+    # Scale and visualize the embedding vectors
+    x_min, x_max = np.min(X, 0), np.max(X, 0)
+    if (X_test is not None) and (y_test is not None):
+        x_min, x_max = np.min(np.array([x_min, np.min(X_test, 0)]), 0), np.max(np.array([x_max, np.max(X_test, 0)]), 0)
+        X_test = (X_test - x_min) / (x_max - x_min)
+    X = (X - x_min) / (x_max - x_min)
+    if (X_test is not None) and (y_test is not None):
+        for i in range(X_test.shape[0]):
+            plt.text(X_test[i, 0], X_test[i, 1], str(y_test[i]),
+                     color=colorlist[y_test[i]],
+                     fontdict={'weight': 'medium', 'size': 9},
+                     alpha=0.4)
+    for i in range(X.shape[0]):
+        plt.text(X[i, 0], X[i, 1], str(y[i]),
+                 color=colorlist[y[i]],
+                 fontdict={'weight': 'medium', 'size': 9},
+                 alpha=1.)
+    # plot some images on top
+    if X_original is not None:
+        shown_images = np.array([[1., 1.]])  # just something big
+        for i in range(X.shape[0]):
+            dist = np.sum((X[i] - shown_images) ** 2, 1)
+            if np.min(dist) < 4e-3:
+                # don't show points that are too close
+                continue
+            shown_images = np.r_[shown_images, [X[i]]]
+            imagebox = offsetbox.AnnotationBbox(
+                offsetbox.OffsetImage(X_original[i].reshape(28, 28), cmap=plt.cm.gray_r),
+                X[i])
+            ax.add_artist(imagebox)
     plt.xticks([]), plt.yticks([])
     plt.xlim(-0.05, 1.05)
     plt.ylim(-0.05, 1.05)
@@ -196,6 +236,22 @@ def plot_20news(X, y, target_names, X_test=None, y_test=None, title=None, legend
     if legend:
         plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), scatterpoints=1)
     plt.xticks([]), plt.yticks([])
+    if title is not None:
+        plt.title(title, fontsize=20)
+
+
+def plot_words(X, word_list, title=None):
+    # Scale and visualize the embedding vectors
+    x_min, x_max = np.min(X, 0), np.max(X, 0)
+    X = (X - x_min) / (x_max - x_min)
+    plt.figure()
+    for i in range(X.shape[0]):
+        plt.text(X[i, 0], X[i, 1], word_list[i],
+                 color='k',
+                 fontdict={'weight': 'medium', 'size': 9})
+    plt.xticks([]), plt.yticks([])
+    plt.xlim(-0.05, 1.2)
+    plt.ylim(-0.05, 1.05)
     if title is not None:
         plt.title(title, fontsize=20)
 
