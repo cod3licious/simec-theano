@@ -113,3 +113,7 @@ class ANN(object):
             T.nlinalg.diag(T.dot(self.layers[-1].W, self.layers[-1].W.T)))).sum() / float(d * d - d)
         # unit length weights in the last layer
         self.normOT = T.abs_(1. - T.sqrt((self.layers[-1].W ** 2).sum(axis=0))).sum() / float(self.layers[-1].W.get_value().shape[1])
+        # square of L2 norm for last layer
+        self.L2_last = T.mean(self.layers[-1].W ** 2)
+        # approximate the similarity matrix with a dot product of the last layer
+        self.s_approx_ll = T.dot(self.layers[-1].W.T, self.layers[-1].W)

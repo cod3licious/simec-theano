@@ -282,20 +282,20 @@ def check_similarity_match(X_embed, S):
         - S: NxN matrix with target similarities (do whatever transformations were done before using this
              as input to the SimEc, e.g. centering, etc.)
     Returns:
-        - msq, rho, r: mean squared error, Spearman and Pearson correlation coefficent between linear kernel of embedding
-                       and target similarities (mean squared error is more exact, corrcoef a more relaxed error measure)
+        - msq, r^2, rho: mean squared error, R^2, and Spearman correlation coefficent between linear kernel of embedding
+                         and target similarities (mean squared error is more exact, corrcoef a more relaxed error measure)
     """
     # compute linear kernel as approximated similarities
     S_approx = X_embed.dot(X_embed.T)
     # to get results that are comparable across similarity measures, we have to normalize them somehow,
     # in this case by dividing by the absolute max value of the target similarity matrix
-    n = np.max(np.abs(S))
-    S_norm = S/n
-    S_approx /= n
+    # n = np.max(np.abs(S))
+    S_norm = S  # /n
+    # S_approx /= n
     # compute mean squared error
     msqe = np.mean((S_norm - S_approx) ** 2)
     # compute Spearman correlation coefficient
     rho = spearmanr(S_norm.flatten(), S_approx.flatten())[0]
     # compute Pearson correlation coefficient
     r = pearsonr(S_norm.flatten(), S_approx.flatten())[0]
-    return msqe, rho, r
+    return msqe, r**2, rho
