@@ -137,16 +137,6 @@ class SimilarityEncoder(object):
         else:
             self.x = T.matrix('x')  # input data
         self.s = T.matrix('s')      # corresponding similarities
-        # are we doing subsampling of the target similarities?
-        if subsampling:
-            idx = T.matrix('idx', dtype='int8')
-        else:
-            idx = None
-        # if we're getting an additional sim mat for the last layer
-        if s_ll_reg:
-            self.s_ll = T.matrix('s_ll')
-        else:
-            self.s_ll = None
 
         # construct the ANN
         self.model = ANN(
@@ -159,16 +149,32 @@ class SimilarityEncoder(object):
 
         # the cost we minimize during training is the mean squared error of
         # the model plus the regularization terms (L1, L2, etc.)
-        self.cost = (
-            embedding_error(self.model.output, self.s, self.error_fun, idx)
-            + s_ll_reg * embedding_error(self.model.s_approx_ll, self.s_ll, self.error_fun)
-            + L1_reg * self.model.L1
-            + L2_reg * self.model.L2_sqr
-            + L2_last_reg * self.model.L2_last
-            + orthNN_reg * self.model.orthNN
-            + orthOT_reg * self.model.orthOT
-            + normOT_reg * self.model.normOT
-        )
+        self.cost = (L1_reg * self.model.L1
+                     + L2_reg * self.model.L2_sqr
+                     + L2_last_reg * self.model.L2_last
+                     + orthNN_reg * self.model.orthNN
+                     + orthOT_reg * self.model.orthOT
+                     + normOT_reg * self.model.normOT)
+
+        training_inputs = [self.x, self.s]
+        # if we're getting an additional sim mat for the last layer
+        if s_ll_reg:
+            self.s_ll = T.matrix('s_ll')
+            self.cost += s_ll_reg * embedding_error(self.model.s_approx_ll, self.s_ll, self.error_fun)
+            training_inputs.append(self.s_ll)
+        else:
+            self.s_ll = None
+
+        # are we doing subsampling of the target similarities?
+        if subsampling:
+            idx = T.matrix('idx', dtype='int8')
+            self.cost += embedding_error(self.model.output, self.s, self.error_fun, idx)
+            training_inputs.append(idx)
+            training_outputs = embedding_error(self.model.output, self.s, self.error_fun, idx)
+        else:
+            idx = None
+            self.cost += embedding_error(self.model.output, self.s, self.error_fun)
+            training_outputs = embedding_error(self.model.output, self.s, self.error_fun)
 
         # compile a Theano function that computes the embedding on some data
         self.embed = theano.function(
@@ -191,8 +197,8 @@ class SimilarityEncoder(object):
         # in the same time updates the parameter of the model based on the rules
         # defined in `updates`
         self.train_model = theano.function(
-            inputs=[self.x, self.s, self.s_ll, idx],
-            outputs=embedding_error(self.model.output, self.s, self.error_fun, idx),
+            inputs=training_inputs,
+            outputs=training_outputs,
             updates=updates,
             allow_input_downcast=True
         )
@@ -225,7 +231,6 @@ class SimilarityEncoder(object):
         # work on 20 training examples at a time
         batch_size = min(n_train, 100)
         n_batches = int(np.ceil(float(n_train) / batch_size))
-        mini_idx = None
 
         # do the actual training of the model
         best_error = np.inf
@@ -242,7 +247,14 @@ class SimilarityEncoder(object):
                 # train model
                 if idx is not None:
                     mini_idx = idx[bi * batch_size:min((bi + 1) * batch_size, n_train), :]
-                train_error.append(self.train_model(mini_x, mini_s, S_ll, mini_idx))
+                    if S_ll is not None:
+                        train_error.append(self.train_model(mini_x, mini_s, S_ll, mini_idx))
+                    else:
+                        train_error.append(self.train_model(mini_x, mini_s, mini_idx))
+                elif S_ll is not None:
+                    train_error.append(self.train_model(mini_x, mini_s, S_ll))
+                else:
+                    train_error.append(self.train_model(mini_x, mini_s))
             mean_train_error.append(np.mean(train_error))
             if not e or not (e + 1) % 25:
                 if verbose:
