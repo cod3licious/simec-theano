@@ -91,7 +91,7 @@ def embedding_error(s_est, s_true, error_fun, idx=None):
 class SimilarityEncoder(object):
 
     def __init__(self, n_targets, n_features, e_dim=2, n_out=[], activations=[None, None], error_fun='squared', sparse_features=False,
-                 subsampling=False, lrate=0.1, lrate_decay=1., min_lrate=0., s_ll_reg=0., L1_reg=0., L2_reg=0., L2_last_reg=0.,
+                 subsampling=False, lrate=0.1, lrate_control=True, lrate_decay=1., min_lrate=0., s_ll_reg=0., L1_reg=0., L2_reg=0., L2_last_reg=0.,
                  orthOT_reg=0., orthNN_reg=0., normOT_reg=0., seed=12):
         """
         Constructs the Similarity Encoder
@@ -106,6 +106,8 @@ class SimilarityEncoder(object):
             - error_fun: which error measure should be used in backpropagation (default: 'squared', other values: 'absolute')
             - sparse_features: bool, whether the input features will be in form of a sparse matrix (csr)
             - lrate: learning rate (default 0.1)
+            - lrate_control: bool, whether if the training error is higher than in a previous iteration, the learning rate should be decreased.
+                             this helps to find a minimum if the lrate was chosen too large. (default True)
             - lrate_decay: learning rate decay (default 1., set to less than 1 to get a decay)
             - min_lrate: in case of lrate_decay, minimum to which the learning rate will decay (default 0.)
             - s_ll_reg: encourage the dot product of the last layer to approximate the target similarities as well (recommended, default 0.)
@@ -128,6 +130,7 @@ class SimilarityEncoder(object):
             name='learning_rate',
             borrow=True
         )
+        self.lrate_control = lrate_control
         self.lrate_decay = lrate_decay
         self.min_lrate = min_lrate
 
@@ -260,7 +263,7 @@ class SimilarityEncoder(object):
                 if verbose:
                     print("Mean training error: %.10f" % mean_train_error[-1])
                 # adapt learning rate
-                if (e > 300 and (mean_train_error[-1] - 0.00001 > best_error)) or np.isnan(mean_train_error[-1]):
+                if (self.lrate_control and e > 300 and (mean_train_error[-1] - 0.00001 > best_error)) or np.isnan(mean_train_error[-1]):
                     # we're bouncing, the learning rate is WAY TO HIGH
                     self.learning_rate.set_value(self.learning_rate.get_value() * 0.75)
                     # might be a problem of min_lrate as well
