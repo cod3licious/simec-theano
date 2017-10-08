@@ -100,9 +100,9 @@ class ANN(object):
         self.output = self.layers[-1].output
         # Define regularization
         # L1 norm
-        self.L1 = sum([abs(l.W).sum() for l in self.layers])
+        self.L1 = sum([T.mean(abs(l.W)) for l in self.layers])
         # square of L2 norm
-        self.L2_sqr = sum([(l.W ** 2).sum() for l in self.layers])
+        self.L2_sqr = sum([T.mean(l.W ** 2) for l in self.layers])
         # orthogonalization of weights in the NN (probably not - only in the linear case)
         self.orthNN = sum([T.abs_(T.dot(l.W.T, l.W) - T.nlinalg.diag(T.nlinalg.diag(T.dot(l.W.T, l.W)))).sum() /
                            float(l.W.get_value().shape[1]) for l in self.layers[:1]]) / float(len(self.layers[:1]))
